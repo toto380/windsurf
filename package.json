@@ -1,0 +1,38 @@
+{
+  "name": "stratads-audit-ultimate",
+  "version": "5.4.2-v22.2.1-ultra-premium-production-stable",
+  "description": "Professional Agency Audit Tool",
+  "main": "src/main/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron src/main/main.js",
+    "build": "electron-builder",
+    "clean": "rimraf node_modules package-lock.json",
+    "dev": "electron src/main/main.js",
+    "test": "node --test test/**/*.test.js",
+    "report:sample": "node scripts/report-sample.js",
+    "report:sample:fast": "node scripts/report-sample.js --profile fast",
+    "report:sample:public": "node scripts/report-sample.js --profile public",
+    "report:sample:private_only": "node scripts/report-sample.js --profile private_only",
+    "report:sample:full": "node scripts/report-sample.js --profile full"
+  },
+  "author": "StratAds Architecture",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0-rc.12",
+    "chrome-launcher": "^1.1.0",
+    "fs-extra": "^11.3.3",
+    "lighthouse": "^11.7.0",
+    "playwright": "^1.49.0",
+    "pptxgenjs": "^3.12.0",
+    "safe-stable-stringify": "^2.4.3",
+    "tldts": "^6.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "rimraf": "^5.0.0"
+  }
+}

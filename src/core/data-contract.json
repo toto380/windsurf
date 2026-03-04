@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StratAds Module Output Contract",
+  "description": "Strict schema every audit module must conform to",
+  "type": "object",
+  "required": ["module_id", "version", "inputs", "observations", "issues", "metrics", "score_contrib", "recommendations"],
+  "additionalProperties": true,
+  "properties": {
+    "module_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique snake_case module identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version string"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Inputs consumed by this module (url, files, ids…)"
+    },
+    "observations": {
+      "type": "array",
+      "description": "Raw observations (evidence, captures, stats)",
+      "items": {
+        "type": "object",
+        "required": ["type", "value"],
+        "properties": {
+          "type": { "type": "string" },
+          "value": {},
+          "label": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Optional textual evidence snippets (no images)",
+      "items": { "type": "string" }
+    },
+    "issues": {
+      "type": "array",
+      "description": "Issues found",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+          "description": { "type": "string" },
+          "evidence": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "effort": { "type": "string", "enum": ["XS", "S", "M", "L", "XL"] },
+          "impact_euro": { "type": "number" }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Key metrics produced by the module"
+    },
+    "score_contrib": {
+      "type": "object",
+      "required": ["weight", "score"],
+      "description": "Contribution to the global score",
+      "properties": {
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "skipped": { "type": "boolean" }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Ordered list of actionable recommendations",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "priority"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "priority": { "type": "string", "enum": ["now", "next", "later"] },
+          "effort": { "type": "string" },
+          "impact": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "Optional output files/paths produced",
+      "items": { "type": "string" }
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "Whether the module executed successfully"
+    },
+    "skipped": {
+      "type": "boolean",
+      "description": "Whether the module was intentionally skipped"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if module failed"
+    }
+  },
+  "definitions": {
+    "scoring_criteria": {
+      "type": "object",
+      "description": "8 weighted scoring criteria",
+      "properties": {
+        "infrastructure": { "type": "number", "description": "Infrastructure quality (15%)" },
+        "ga4": { "type": "number", "description": "GA4 tracking quality (15%)" },
+        "ecommerce": { "type": "number", "description": "E-commerce tracking (15%)" },
+        "gtm": { "type": "number", "description": "GTM configuration (10%)" },
+        "server_side": { "type": "number", "description": "Server-side tracking (15%)" },
+        "ads": { "type": "number", "description": "Ads attribution quality (15%)" },
+        "data_quality": { "type": "number", "description": "Data quality (10%)" },
+        "business_reliability": { "type": "number", "description": "Business reliability (5%)" }
+      }
+    }
+  }
+}
