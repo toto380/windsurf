@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prospection — ht</title>
+<style>
+:root {
+  --bg: #0b1220; --surface: #0f1b31; --surface2: #0b1528;
+  --border: #24324a; --text: #e5e7eb; --muted: #9ca3af;
+  --primary: #3b82f6; --primary2: #2563eb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #0b1220; color: #e5e7eb; line-height: 1.6;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+h1 { font-size: 28px; font-weight: 900; }
+h2 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.section { margin-bottom: 36px; }
+.card {
+  background: rgba(15,27,49,.7); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px;
+}
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-card {
+  background: rgba(15,27,49,.9); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px; padding: 14px; text-align: center;
+}
+.kpi-value { font-size: 28px; font-weight: 900; line-height: 1.1; }
+.kpi-label { font-size: 11px; color: #9ca3af; margin-top: 5px; text-transform: uppercase; letter-spacing: .5px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: rgba(59,130,246,.15); color: #93c5fd; padding: 9px 10px; text-align: left; font-weight: 700; }
+td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
+tr:hover td { background: rgba(255,255,255,.03); }
+.badge-critical { background:#ef4444;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-high { background:#f97316;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-medium { background:#f59e0b;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-low { background:#6b7280;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-now { background:#ef4444;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-next { background:#f59e0b;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.badge-later { background:#22c55e;color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700; }
+.score-ring { display:inline-block; }
+details { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:8px; margin-top:10px; }
+details summary { padding:10px 14px; cursor:pointer; font-weight:600; color:#93c5fd; }
+details[open] summary { border-bottom:1px solid rgba(255,255,255,.06); }
+details .content { padding:14px; font-size:13px; color:#d1d5db; }
+.confidentiel { background:#ef4444; color:#fff; text-align:center; padding:8px; font-weight:900; letter-spacing:4px; font-size:13px; }
+.header-bar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 0 16px; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:24px; }
+.header-meta { flex:1; min-width:200px; }
+.header-meta h1 { font-size:22px; }
+.header-meta .subtitle { font-size:13px; color:#9ca3af; margin-top:4px; }
+.score-cards { display:flex; gap:10px; flex-wrap:wrap; }
+.score-card { background:rgba(15,27,49,.9); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px 16px; text-align:center; min-width:90px; }
+.score-card .val { font-size:26px; font-weight:900; line-height:1.1; }
+.score-card .lbl { font-size:10px; color:#9ca3af; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+.alert-box { padding:14px 16px; border-radius:8px; margin-bottom:12px; }
+.alert-error { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); }
+.alert-warn { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); }
+.alert-info { background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.3); }
+footer { text-align:center; color:#4b5563; font-size:11px; padding:24px 0 20px; margin-top:40px; border-top:1px solid rgba(255,255,255,.06); }
+@media (max-width:600px) { .kpi-grid { grid-template-columns:1fr 1fr; } .score-cards { gap:6px; } }
+@media print { body { background:#fff; color:#000; } .card { border:1px solid #ccc; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+
+<div class="header-bar">
+  <div class="header-meta">
+    <h1>ht</h1>
+    <div class="subtitle">https://www.stratads.fr/ &nbsp;·&nbsp; Prospection &nbsp;·&nbsp; 4 mars 2026</div>
+  </div>
+  <div class="score-cards">
+    
+<div class="score-card">
+  <div class="val" style="color:#22c55e;">83<span style="font-size:13px;">/100</span></div>
+  <div class="lbl">Public</div>
+</div>
+    
+<div class="score-card">
+  <div class="val" style="color:#ef4444;">—<span style="font-size:13px;">/100</span></div>
+  <div class="lbl">Privé</div>
+</div>
+    
+<div class="score-card">
+  <div class="val" style="color:#22c55e;">94<span style="font-size:13px;">/100</span></div>
+  <div class="lbl">Global</div>
+</div>
+  </div>
+</div>
+
+<div id="data-availability" class="section">
+  <h2>📋 État des Sources de Données</h2>
+  
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin-bottom:12px;color:#93c5fd;">📋 État des Sources de Données (Looker Studio)</h3>
+  <table>
+    <thead><tr>
+      <th>Module</th>
+      <th>Statut</th>
+      <th>Données</th>
+      <th>Raison (si indisponible)</th>
+    </tr></thead>
+    <tbody><tr>
+      <td><b>GA4 Analytics</b></td>
+      <td style="color:#f59e0b;">⚠️ Non configuré</td>
+      <td style="color:#ef4444;font-weight:700;">❌ Indisponible</td>
+      <td style="color:#9ca3af;font-size:12px;">Service account non fourni ou accès refusé</td>
+    </tr><tr>
+      <td><b>GTM API</b></td>
+      <td style="color:#ef4444;">❌ Erreur API</td>
+      <td style="color:#ef4444;font-weight:700;">❌ Indisponible</td>
+      <td style="color:#9ca3af;font-size:12px;">Service account + GTM Container ID requis</td>
+    </tr><tr>
+      <td><b>Google Ads (export CSV)</b></td>
+      <td style="color:#f59e0b;">⚠️ Non fourni</td>
+      <td style="color:#ef4444;font-weight:700;">❌ Indisponible</td>
+      <td style="color:#9ca3af;font-size:12px;">Export CSV Google Ads non importé</td>
+    </tr><tr>
+      <td><b>Meta Ads (export CSV)</b></td>
+      <td style="color:#f59e0b;">⚠️ Non fourni</td>
+      <td style="color:#ef4444;font-weight:700;">❌ Indisponible</td>
+      <td style="color:#9ca3af;font-size:12px;">Export CSV Meta Ads non importé</td>
+    </tr><tr>
+      <td><b>Tracking public (scraping)</b></td>
+      <td style="color:#22c55e;">✅ Exécuté</td>
+      <td style="color:#22c55e;font-weight:700;">✅ Disponible</td>
+      <td style="color:#9ca3af;font-size:12px;">—</td>
+    </tr><tr>
+      <td><b>SEO &amp; Crawl</b></td>
+      <td style="color:#22c55e;">✅ Exécuté</td>
+      <td style="color:#22c55e;font-weight:700;">✅ Disponible</td>
+      <td style="color:#9ca3af;font-size:12px;">—</td>
+    </tr><tr>
+      <td><b>Security Headers</b></td>
+      <td style="color:#22c55e;">✅ Exécuté</td>
+      <td style="color:#22c55e;font-weight:700;">✅ Disponible</td>
+      <td style="color:#9ca3af;font-size:12px;">—</td>
+    </tr><tr>
+      <td><b>Lighthouse (Performance)</b></td>
+      <td style="color:#22c55e;">✅ Exécuté</td>
+      <td style="color:#22c55e;font-weight:700;">✅ Disponible</td>
+      <td style="color:#9ca3af;font-size:12px;">—</td>
+    </tr></tbody>
+  </table>
+  <div style="margin-top:10px;font-size:11px;color:#6b7280;">✅ Disponible = données réelles utilisées &nbsp;·&nbsp; ❌ Indisponible = section affichée avec "—" &nbsp;·&nbsp; ⚠️ Non configuré = module non activé pour ce profil</div>
+</div>
+</div>
+
+<div id="kpis" class="section">
+  <div class="kpi-grid">
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#3b82f6;">—</div>
+  <div class="kpi-label">Sessions (28j)</div>
+</div>
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#8b5cf6;">—</div>
+  <div class="kpi-label">Conversions (28j)</div>
+</div>
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#22c55e;">—</div>
+  <div class="kpi-label">Revenu (28j)</div>
+</div>
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#f59e0b;">—</div>
+  <div class="kpi-label">% Événements manquants</div>
+</div>
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#f97316;">—</div>
+  <div class="kpi-label">Dépenses Ads</div>
+</div>
+<div class="kpi-card">
+  <div class="kpi-value" style="color:#ef4444;">—</div>
+  <div class="kpi-label">ROAS</div>
+</div></div>
+</div>
+
+<div id="issues" class="section">
+  <h2>🚨 5 Problèmes majeurs détectés</h2>
+  <div class="card">
+    <table><thead><tr><th>Sévérité</th><th>Problème</th><th>Effort</th></tr></thead><tbody>
+<tr>
+  <td><span style="background:#f97316;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;">high</span></td>
+  <td><b>Aucune CMP / consentement détecté</b><br><span style="color:#9ca3af;font-size:12px;">Aucune solution de gestion du consentement RGPD détectée.</span></td>
+  <td style="color:#9ca3af;font-size:12px;">M</td>
+</tr></tbody></table>
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,.08);border-radius:8px;border:1px solid rgba(245,158,11,.3);">
+      <b style="color:#f59e0b;">💶 Impact estimé : 2 000€</b><br>
+      <span style="color:#9ca3af;font-size:12px;">⚠️ Estimation heuristique (critical=5 000€, high=2 000€, medium=500€) — non basée sur des données revenue réelles. Fournir un accès GA4 pour un calcul précis.</span>
+    </div>
+  </div>
+</div>
+
+<div id="quickwins" class="section">
+  <h2>⚡ 5 Quick Wins</h2>
+  <div class="card">
+    <table><thead><tr><th>Priorité</th><th>Action</th><th>Effort</th><th>Impact</th></tr></thead><tbody>
+<tr>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">NOW (7j)</span></td>
+  <td><b>Ajouter une CMP conforme RGPD</b><br><span style="color:#9ca3af;font-size:12px;">Intégrer Cookiebot, OneTrust ou Didomi avec Google Consent Mode v2.</span></td>
+  <td style="color:#9ca3af;font-size:12px;">M</td>
+  <td style="color:#9ca3af;font-size:12px;">Conformité légale + données de qualité</td>
+</tr></tbody></table>
+  </div>
+</div>
+
+<div id="cta" class="section">
+  <div class="card" style="text-align:center;padding:28px;">
+    <h2 style="color:#3b82f6;">🎯 Prochaines étapes</h2>
+    <p style="color:#9ca3af;margin:10px 0 18px;">Un audit complet permettrait d'identifier l'ensemble des fuites de données et d'optimiser votre ROI publicitaire.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:14px;">
+        <b>Audit Public Complet</b><br><span style="color:#9ca3af;font-size:12px;">7-8 sections techniques</span>
+      </div>
+      <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:14px;">
+        <b>Audit 360° Privé</b><br><span style="color:#9ca3af;font-size:12px;">GA4 + Ads + GTM privé</span>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>StratAds — Cabinet d'acquisition & tracking — Rapport généré automatiquement — CONFIDENTIEL</footer>
+</div>
+</body>
+</html>
