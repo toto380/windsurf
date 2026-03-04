@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "url": "https://www.stratads.fr/",
+    "company": "d",
+    "date": "2026-03-04T13:01:45.230Z",
+    "auditType": "fast"
+  },
+  "kpis": {},
+  "analysis": {},
+  "recommendations": [],
+  "score": 100,
+  "acquisitionScore": {
+    "global": 100,
+    "tracking": 30,
+    "performance": 25,
+    "conversion": 20,
+    "economics": 25,
+    "grade": "A"
+  },
+  "performance": {
+    "speed": 84,
+    "loadTime": 1.555,
+    "mobileOptimized": true,
+    "coreWebVitals": {
+      "loadTime": 0,
+      "domContentLoaded": 0.29999999701976776
+    }
+  },
+  "tracking": {
+    "hasGTM": true,
+    "hasPixels": true,
+    "pixels": {
+      "gtm": true,
+      "ga4": false,
+      "facebook": false,
+      "linkedin": false,
+      "tiktok": false,
+      "googleAds": false
+    },
+    "score": 20
+  },
+  "growthPotential": {
+    "currentRevenue": 1200000,
+    "potentialRevenue": 1200000,
+    "lostRevenue": 0,
+    "growthMultiplier": 1,
+    "confidence": "high"
+  },
+  "quickWins": [
+    {
+      "title": "Compléter le tracking conversion",
+      "impact": "Élevé",
+      "effort": "Faible",
+      "description": "Ajouter les événements d'achat et panier"
+    }
+  ]
+}

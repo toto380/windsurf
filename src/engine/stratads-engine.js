@@ -7,8 +7,9 @@
 import fs from "fs-extra";
 import path from "node:path";
 import { chromium } from "playwright";
-import lighthouse from "lighthouse";
 import * as cheerio from "cheerio";
+import { FastAuditProspection } from "./fast-audit-prospection.js";
+import { FastAuditReportGenerator } from "../main/fast-audit-report-generator.js";
 
 export class StratadsAuditEngine {
   constructor(url, company, options = {}) {
@@ -32,31 +33,11 @@ export class StratadsAuditEngine {
   async runFastAudit() {
     console.log(`[StratAds] 🚀 Fast Public Audit (2min) - ${this.company}`);
     
-    // 1. Score global acquisition (calcul rapide)
-    const acquisitionScore = await this.calculateAcquisitionScore();
+    // Utiliser le nouveau FastAuditProspection
+    const fastAudit = new FastAuditProspection(this.url, this.company);
+    const results = await fastAudit.run();
     
-    // 2. Performance web (vitesse, mobile)
-    const performance = await this.analyzePerformance();
-    
-    // 3. Tracking detection
-    const tracking = await this.detectTracking();
-    
-    // 4. Estimation potentiel de croissance
-    const growthPotential = await this.estimateGrowthPotential();
-    
-    // 5. Top 5 quick wins
-    const quickWins = await this.generateQuickWins();
-    
-    this.results = {
-      ...this.results,
-      acquisitionScore,
-      performance,
-      tracking,
-      growthPotential,
-      quickWins,
-      score: acquisitionScore.global
-    };
-    
+    this.results = results;
     return this.results;
   }
 

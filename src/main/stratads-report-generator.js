@@ -5,6 +5,8 @@
 
 import fs from "fs-extra";
 import path from "node:path";
+import { StratadsCharts } from "./stratads-charts.js";
+import { FastAuditReportGenerator } from "./fast-audit-report-generator.js";
 import { KpiCalculator } from "../engine/kpi-calculator.js";
 
 export class StratadsReportGenerator {
@@ -32,6 +34,9 @@ export class StratadsReportGenerator {
   generateFastReport() {
     const { acquisitionScore, performance, tracking, growthPotential, quickWins } = this.results;
     
+    // Utiliser le nouveau FastAuditReportGenerator
+    const fastReportGenerator = new FastAuditReportGenerator(this.results);
+    
     const html = `
 <!DOCTYPE html>
 <html lang="fr">
@@ -43,18 +48,12 @@ export class StratadsReportGenerator {
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>🚀 StratAds Fast Audit</h1>
-            <h2>${this.company}</h2>
-            <p class="subtitle">Diagnostic rapide 2 minutes - Prospection</p>
-        </header>
-
         ${this.generateExecutiveSummary()}
         ${this.generateAcquisitionScore(acquisitionScore)}
         ${this.generatePerformanceSection(performance)}
         ${this.generateTrackingSection(tracking)}
-        ${this.generateGrowthPotential(growthPotential)}
         ${this.generateQuickWins(quickWins)}
+        ${this.generateGrowthPotential(growthPotential)}
         
         <footer class="footer">
             <p>💰 Audit complet disponible : 2500€</p>
