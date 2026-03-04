@@ -41,41 +41,34 @@ const els = {
 };
 
 function profileToConfig(profile){
-  const p = String(profile||'prospection').toLowerCase();
-  // 4 modes: prospection | public_full | private_only | public_private
+  // Nouvelle architecture StratAds V2
+  const p = String(profile || 'fast').toLowerCase();
   switch(p){
-    case 'public_full':
-      return { preset: 'full', reportModules: { publicLight:false, publicFull:true, privateAds:false, privateGoogle:false } };
-    case 'private_only':
-      return { preset: 'private', reportModules: { publicLight:false, publicFull:false, privateAds:true, privateGoogle:true } };
-    case 'public_private':
-      return { preset: 'full', reportModules: { publicLight:false, publicFull:true, privateAds:true, privateGoogle:true } };
-    // Legacy aliases kept for backward compat
-    case 'private_ads':
-      return { preset: 'classic', reportModules: { publicLight:false, publicFull:false, privateAds:true, privateGoogle:false } };
-    case 'private_google':
-      return { preset: 'classic', reportModules: { publicLight:false, publicFull:false, privateAds:false, privateGoogle:true } };
-    case 'audit_360':
-      return { preset: 'full', reportModules: { publicLight:false, publicFull:true, privateAds:true, privateGoogle:true } };
-    case 'prospection':
+    case 'fast':
+      return { auditType: 'fast', description: 'Prospection 2min - Gratuit' };
+    case 'public':
+      return { auditType: 'public', description: 'Public Complet - 2500€' };
+    case 'private':
+      return { auditType: 'private', description: 'Private Audit - 5000€' };
+    case 'full':
+      return { auditType: 'full', description: 'Full Audit - 7500€' };
     default:
-      return { preset: 'classic', reportModules: { publicLight:true, publicFull:false, privateAds:false, privateGoogle:false } };
+      return { auditType: 'fast', description: 'Prospection 2min - Gratuit' };
   }
 }
 
 function togglePrivateAccessUI(){
   const cfg = profileToConfig(els.auditProfileSelect?.value);
   if (els.privateAccessBlock){
-    // Show the private block if profile includes any private module.
-    const show = !!cfg?.reportModules?.privateAds || !!cfg?.reportModules?.privateGoogle;
+    // Afficher le bloc privé seulement pour private/full
+    const show = cfg.auditType === 'private' || cfg.auditType === 'full';
     els.privateAccessBlock.style.display = show ? 'block' : 'none';
-
-    // Inside the private block, always show both sections for private modes
-    // (private_only and public_private both need Google + Ads access)
+    
+    // Afficher les champs selon le type
     const sa = document.getElementById('saFields');
     const ads = document.getElementById('adsFields');
-    if (sa) sa.style.display = (show && !!cfg?.reportModules?.privateGoogle) ? 'block' : 'none';
-    if (ads) ads.style.display = (show && !!cfg?.reportModules?.privateAds) ? 'block' : 'none';
+    if (sa) sa.style.display = show ? 'block' : 'none';
+    if (ads) ads.style.display = show ? 'block' : 'none';
   }
 }
 
@@ -150,37 +143,15 @@ function buildParams(){
   const url = validateUrl((els.url.value||'').trim());
   const company = (els.company.value||'').trim() || (url ? new URL(url).hostname : '');
   const lang = (els.lang.value||'fr').trim();
-  const profile = (els.auditProfileSelect?.value || 'prospection');
+  const profile = (els.auditProfileSelect?.value || 'fast');
   const cfg = profileToConfig(profile);
-  const reportModules = cfg.reportModules;
-  const preset = cfg.preset;
+  
   return {
     url,
     company,
     lang,
-    preset,
-    auditMode: reportModules.publicLight ? 'fast' : preset,
-    accessMode: (() => {
-      const pub = !!reportModules.publicLight || !!reportModules.publicFull;
-      const priv = !!reportModules.privateAds || !!reportModules.privateGoogle;
-      // Keep backward compat: accessMode drives some legacy report branches.
-      if (priv && !pub) return 'private';
-      if (priv) return 'mixed';
-      return 'public';
-    })(),
-    reportModules,
-    serviceAccountJsonPath: selectedServiceAccountJsonPath,
-    ga4PropertyId: String(els.ga4PropertyId?.value || '').trim(),
-    gscSiteUrl: String(els.gscSiteUrl?.value || '').trim(),
-    gtmPublicId: String(els.gtmPublicId?.value || '').trim(),
-    siteUrl: url,
-    adsExportPaths: selectedAdsExportPaths,
-    metaAdsExportPaths: selectedMetaAdsExportPaths,
-
-    outputDir: selectedOutputDir,
-
-    logo: selectedLogo || 'favicon.png',
-    sector: (els.sector?.value || 'auto').trim(),
+    auditType: cfg.auditType,
+    serviceAccountData: selectedServiceAccountJsonPath ? { path: selectedServiceAccountJsonPath } : null
   };
 }
 
@@ -314,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setBusy(false);
     setProgress(100);
     if (els.result) els.result.classList.remove('hidden');
-    const folder = res?.folder || res?.path;
+    const folder = res?.folder || res?.path || res?.outputDir;
     if (els.reportLoc){
       const base = folder ? basenamePath(folder) : '';
       els.reportLoc.textContent = base ? base : (folder ? folder : 'Rapports générés.');
@@ -345,6 +316,14 @@ document.addEventListener('DOMContentLoaded', () => {
           logLine(`❌ Open folder: ${e?.message || e}`);
         }
       };
+    }
+
+    // Afficher les informations de pricing
+    if (res.pricing) {
+      logLine(`💰 ${res.pricing.description}`);
+      if (res.pricing.price > 0) {
+        logLine(`💵 Prix: ${res.pricing.price}€`);
+      }
     }
   });
 });
