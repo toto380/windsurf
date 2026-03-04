@@ -1,11 +1,11 @@
-// ===== StratAds V2 Main Process (Business-Oriented) =====
+// ===== StratAds Squelette =====
 import pkg from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 import { File } from 'node:buffer';
-import { StratadsOrchestrator } from '../engine/stratads-orchestrator.js';
+import { Backend } from '../backend/index.js';
 
 const { app, BrowserWindow, ipcMain, shell, dialog } = pkg;
 
@@ -154,17 +154,16 @@ ipcMain.on('start-audit', async (event, params) => {
     const log = msg => sender.send('audit-log', msg);
     const progress = pct => sender.send('audit-progress', pct);
 
-    // Utilisation de la nouvelle architecture StratAds
-    const orchestrator = new StratadsOrchestrator();
-    const result = await orchestrator.runAudit(params, log, progress, mainWindow);
+    const backend = new Backend();
+    const result = await backend.run(params, log, progress);
     
     if (result.success) {
       sender.send('audit-complete', { 
         success: true, 
         path: result.outputDir,
         reportFile: result.report.filename,
-        auditType: result.type,
-        pricing: orchestrator.getPricing(result.type)
+        auditType: result.metadata.auditType,
+        score: result.metadata.score
       });
     } else {
       sender.send('audit-complete', { 
