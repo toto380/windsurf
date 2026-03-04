@@ -72,7 +72,7 @@ export class StratadsOrchestrator {
       progress(90);
       
       // Sauvegarde des résultats
-      const outputDir = await this.saveResults(auditResults, report, params);
+      const outputDir = await this.saveResults(auditResults, report, { company, url, auditType });
       
       progress(100);
       log(`[StratAds] ✅ Audit terminé avec succès`);
@@ -98,7 +98,8 @@ export class StratadsOrchestrator {
 
   async saveResults(auditResults, report, params) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const outputDir = path.join(process.cwd(), 'tmp', `stratads-audit-${params.company.replace(/\s+/g, '-').toLowerCase()}-${timestamp}`);
+    const companyName = params.company || auditResults.meta?.company || 'unknown-company';
+    const outputDir = path.join(process.cwd(), 'tmp', `stratads-audit-${companyName.replace(/\s+/g, '-').toLowerCase()}-${timestamp}`);
     
     await fs.ensureDir(outputDir);
     

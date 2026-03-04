@@ -12,8 +12,9 @@ import { KpiCalculator } from "../engine/kpi-calculator.js";
 export class StratadsReportGenerator {
   constructor(auditResults) {
     this.results = auditResults;
-    this.company = auditResults.meta.company;
-    this.auditType = auditResults.meta.auditType;
+    this.company = auditResults.meta?.company || auditResults.executiveSummary?.company || 'unknown-company';
+    this.auditType = auditResults.meta?.auditType || 'fast';
+    console.log(`[ReportGenerator] Company: ${this.company}, Type: ${this.auditType}`);
   }
 
   async generateReport() {
@@ -32,12 +33,14 @@ export class StratadsReportGenerator {
   }
 
   generateFastReport() {
-    const { acquisitionScore, performance, tracking, growthPotential, quickWins } = this.results;
-    
-    // Utiliser le nouveau FastAuditReportGenerator
-    const fastReportGenerator = new FastAuditReportGenerator(this.results);
-    
-    const html = `
+    console.log(`[ReportGenerator] generateFastReport - Company: ${this.company}`);
+    try {
+      const { acquisitionScore, performance, tracking, growthPotential, quickWins } = this.results;
+      
+      // Utiliser le nouveau FastAuditReportGenerator
+      const fastReportGenerator = new FastAuditReportGenerator(this.results);
+      
+      const html = `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -63,11 +66,18 @@ export class StratadsReportGenerator {
 </body>
 </html>`;
 
-    return {
-      html,
-      filename: `stratads-fast-${this.company.replace(/\s+/g, '-').toLowerCase()}.html`,
-      type: 'fast'
-    };
+      console.log(`[ReportGenerator] HTML généré, filename: ${this.company}`);
+      
+      return {
+        html,
+        filename: `stratads-fast-${this.company.replace(/\s+/g, '-').toLowerCase()}.html`,
+        type: 'fast'
+      };
+    } catch (error) {
+      console.error(`[ReportGenerator] Erreur dans generateFastReport:`, error.message);
+      console.error(`[ReportGenerator] Stack:`, error.stack);
+      throw error;
+    }
   }
 
   generatePublicReport() {
@@ -139,14 +149,18 @@ export class StratadsReportGenerator {
   generateExecutiveSummary() {
     const { acquisitionScore, growthPotential } = this.results;
     
+    // Pour le Fast Audit, la structure est différente
+    const globalScore = acquisitionScore.global || 0;
+    const grade = this.getGradeFromScore(globalScore);
+    
     return `
 <section class="section">
     <h2>📊 Résumé Exécutif</h2>
     <div class="cards">
         <div class="card">
             <h3>Score Acquisition</h3>
-            <div class="score ${acquisitionScore.grade.toLowerCase()}">${acquisitionScore.global}/100</div>
-            <p>Note: ${acquisitionScore.grade}</p>
+            <div class="score ${grade.toLowerCase()}">${globalScore}/100</div>
+            <p>Note: ${grade}</p>
         </div>
         <div class="card">
             <h3>Revenu Actuel Estimé</h3>
@@ -230,14 +244,25 @@ export class StratadsReportGenerator {
   }
 
   generateTrackingSection(tracking) {
+    // Pour le Fast Audit, la structure est différente
+    if (!tracking || !tracking.detected) {
+      return `
+<section class="section">
+    <h2>📡 Tracking Detection</h2>
+    <div class="alert warning">
+        ⚠️ Tracking non analysé
+    </div>
+</section>`;
+    }
+    
     return `
 <section class="section">
     <h2>📡 Tracking Detection</h2>
     <div class="tracking-grid">
-        ${Object.entries(tracking.pixels).map(([platform, detected]) => `
-            <div class="tracking-item ${detected ? 'detected' : 'missing'}">
+        ${tracking.detected.map(platform => `
+            <div class="tracking-item detected">
                 <span class="platform">${platform.toUpperCase()}</span>
-                <span class="status">${detected ? '✅' : '❌'}</span>
+                <span class="status">✅</span>
             </div>
         `).join('')}
     </div>
@@ -299,6 +324,15 @@ export class StratadsReportGenerator {
   }
 
   // === STYLES ===
+
+  // === UTILITAIRES ===
+  
+  getGradeFromScore(score) {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Bon';
+    if (score >= 40) return 'Moyen';
+    return 'Faible';
+  }
 
   getBaseStyles() {
     return `
