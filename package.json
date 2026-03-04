@@ -10,6 +10,7 @@
     "clean": "rimraf node_modules package-lock.json",
     "dev": "electron src/main/main.js",
     "test": "node --test test/**/*.test.js",
+    "test:pipelines": "node scripts/test-clean-pipelines.js",
     "report:sample": "node scripts/report-sample.js",
     "report:sample:fast": "node scripts/report-sample.js --profile fast",
     "report:sample:public": "node scripts/report-sample.js --profile public",

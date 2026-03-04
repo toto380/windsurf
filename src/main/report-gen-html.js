@@ -906,105 +906,6 @@ function buildWebPublicDataSection(results) {
 </div>`;
 }
 
-function buildLookerStudioMockup(results) {
-  const ga4 = results.modules?.ga4Audit?.metrics || {};
-  const adsGoogle = results.modules?.adsGoogle || results.modules?.adsAudit?.metrics?.platforms?.google || {};
-  const adsMeta = results.modules?.adsMeta || results.modules?.adsAudit?.metrics?.platforms?.meta || {};
-  const hasGa4 = !!ga4.dataAvailable;
-  const hasAds = !!(adsGoogle.ok || (adsGoogle.cost ?? adsGoogle.spend ?? 0) > 0);
-
-  const v = (val, suffix = '', decimals = 0) => {
-    if (val == null || val === '' || val === false) return '—';
-    const n = Number(val);
-    if (!Number.isFinite(n)) return '—';
-    return decimals > 0 ? n.toFixed(decimals) + suffix : Math.round(n).toLocaleString('fr-FR') + suffix;
-  };
-
-  const sessions = ga4.sessions ?? null;
-  const users = ga4.users ?? null;
-  const conversions = ga4.conversions ?? null;
-  const revenue = ga4.revenue ?? null;
-  const convRate = sessions > 0 && conversions != null ? (conversions / sessions * 100) : null;
-  const aov = revenue > 0 && conversions > 0 ? revenue / conversions : null;
-  const adsSpend = (adsGoogle.cost ?? adsGoogle.spend ?? 0) + (adsMeta.spend ?? 0);
-  const roas = adsSpend > 0 && revenue > 0 ? revenue / adsSpend : null;
-
-  const kpiRow = (label, value, color = '#93c5fd') => `
-<div class="kpi-card" style="border-left:3px solid ${color};">
-  <div class="kpi-value" style="font-size:20px;color:${color};">${value}</div>
-  <div class="kpi-label">${esc(label)}</div>
-</div>`;
-
-  const revenueKpis = [
-    kpiRow('Revenu total (28j)', v(revenue, '€'), '#22c55e'),
-    kpiRow('Conversions (28j)', v(conversions), '#8b5cf6'),
-    kpiRow('Taux de conversion', convRate != null ? convRate.toFixed(2) + '%' : '—', '#3b82f6'),
-    kpiRow('Valeur moy. panier (AOV)', v(aov, '€', 2), '#f59e0b'),
-    kpiRow('Sessions (28j)', v(sessions), '#3b82f6'),
-    kpiRow('Utilisateurs (28j)', v(users), '#6366f1'),
-  ];
-
-  const adsKpis = [
-    kpiRow('Dépenses Ads (28j)', adsSpend > 0 ? v(adsSpend, '€') : '—', '#f97316'),
-    kpiRow('ROAS global', roas != null ? roas.toFixed(2) : '—', roas != null && roas >= 3 ? '#22c55e' : (roas != null && roas >= 1 ? '#f59e0b' : '#ef4444')),
-    kpiRow('Google Ads dépense', v(adsGoogle.cost ?? adsGoogle.spend, '€'), '#4285F4'),
-      <summary style="color:#3b82f6;">🗺️ User Journey &amp; Sources</summary>
-      <div class="content">
-        <div class="kpi-grid" style="margin:10px 0;">
-          ${kpiRow('Temps moyen / session', '—', '#3b82f6')}
-          ${kpiRow('Pages / session', '—', '#3b82f6')}
-          ${kpiRow('Taux de rebond global', '—', '#f59e0b')}
-        </div>
-        <table>
-          <thead><tr><th>Source / Medium</th><th>Sessions</th><th>Taux rebond</th><th>Conversions</th><th>Revenu</th></tr></thead>
-          <tbody>
-            ${channelRows.map(r => `<tr>${r.map(c => `<td style="color:#9ca3af;">${esc(c)}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details style="margin-bottom:16px;">
-      <summary style="color:#f97316;">💸 Données Ads (Google &amp; Meta)</summary>
-      <div class="content">
-        <div class="kpi-grid" style="margin:10px 0;">${adsKpis.join('')}</div>
-        <div style="margin-top:10px;font-size:12px;color:#6b7280;">
-          ${!hasAds ? '⚠️ Exports CSV Google Ads / Meta Ads non importés — importer les fichiers pour afficher les données campagnes.' : '✅ Données Ads importées.'}
-        </div>
-        <table style="margin-top:10px;">
-          <thead><tr><th>Campagne</th><th>Plateforme</th><th>Dépense</th><th>ROAS</th><th>CPC moy.</th><th>CTR</th></tr></thead>
-          <tbody>
-            <tr><td colspan="6" style="color:#9ca3af;text-align:center;padding:16px;">Données campagnes non disponibles — importer exports CSV</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details>
-      <summary style="color:#6366f1;">🔬 Données Avancées GA4</summary>
-      <div class="content">
-        <div class="kpi-grid" style="margin:10px 0;">
-          ${kpiRow('LTV moy. (lifetime value)', '—', '#6366f1')}
-          ${kpiRow('CAC estimé', '—', '#6366f1')}
-          ${kpiRow('LTV/CAC ratio', '—', '#6366f1')}
-        </div>
-        <h3 style="font-size:13px;margin:12px 0 6px;">User Retention par cohorte</h3>
-        <table>
-          <thead><tr><th>Cohorte</th><th>Taux de rétention</th></tr></thead>
-          <tbody>
-            ${retentionRows.map(r => `<tr>
-              <td><b>${esc(r.cohort)}</b></td>
-              <td style="color:#9ca3af;">${esc(r.val)}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <div style="margin-top:10px;font-size:12px;color:#6b7280;">Attribution multi-touch, cross-device journeys et Lifetime Value par cohort nécessitent un accès GA4 API complet.</div>
-      </div>
-    </details>
-  </div>
-</div>`;
-}
-
 // ── HTML wrapper ──────────────────────────────────────────────────────────────
 
 function wrapHtml(title, isPrivate, bodyContent) {
@@ -1376,7 +1277,20 @@ ${buildSecurityProtocolSection(results)}
 
 ${buildWebPublicDataSection(results)}
 
-${buildLookerStudioMockup(results)}
+<div id="looker-studio-section" class="section">
+  <h2>📊 Tableau de Bord Looker Studio — Données Privées</h2>
+  <div class="card" style="border:2px solid rgba(245,158,11,.3);">
+    <div style="text-align:center;padding:40px;color:#6b7280;">
+      <div style="font-size:24px;margin-bottom:12px;">📊</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Tableau de Bord Looker Studio</div>
+      <div style="font-size:14px;line-height:1.6;">
+        Configurez un service account Google pour accéder aux données GA4, Search Console et Ads.<br>
+        Les données apparaîtront ici en temps réel une fois l'accès configuré.<br>
+        <strong style="color:#f59e0b;">🧹 Nettoyage effectué: plus de données mock</strong>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="roadmap" class="section">
   <h2>🗺️ Roadmap Now / Next / Later</h2>
