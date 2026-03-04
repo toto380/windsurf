@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "url": "https://stratads.com",
+    "company": "Test",
+    "auditType": "fast",
+    "date": "2026-03-04T14:15:42.675Z"
+  },
+  "scores": {
+    "global": 90,
+    "technical": 100,
+    "marketing": 80,
+    "maturity": "Avancé"
+  },
+  "technical": {
+    "performance": {
+      "loadTime": 0,
+      "grade": "A"
+    },
+    "structure": {
+      "hasTitle": true,
+      "hasMetaDescription": true,
+      "hasH1": true,
+      "hasViewport": true,
+      "hasHttps": true,
+      "formsCount": 3
+    }
+  },
+  "marketing": {
+    "tracking": {
+      "googleAnalytics": true,
+      "googleTagManager": true,
+      "facebookPixel": false,
+      "linkedinInsight": false,
+      "tiktokPixel": false,
+      "detected": [
+        "googleAnalytics",
+        "googleTagManager"
+      ]
+    },
+    "elements": {
+      "hasCTA": true,
+      "hasPhone": true,
+      "hasEmail": false,
+      "hasForms": true
+    }
+  },
+  "recommendations": []
+}

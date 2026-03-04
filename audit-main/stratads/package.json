@@ -1,0 +1,27 @@
+{
+  "name": "stratads-audit-v3",
+  "version": "3.0.0",
+  "description": "StratAds Audit V3 - Architecture Propre",
+  "main": "src/main/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron src/main/main.js",
+    "dev": "electron src/main/main.js",
+    "cli:fast": "node scripts/cli.js -t fast",
+    "cli:public": "node scripts/cli.js -t public",
+    "cli:private": "node scripts/cli.js -t private",
+    "cli:full": "node scripts/cli.js -t full",
+    "clean": "rimraf tmp reports"
+  },
+  "author": "StratAds",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^11.3.3",
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "rimraf": "^5.0.0"
+  }
+}
