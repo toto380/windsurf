@@ -1,11 +1,13 @@
-// ===== StratAds Main Process (Premium Aligned) =====
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
+// ===== StratAds V2 Main Process (Business-Oriented) =====
+import pkg from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 import { File } from 'node:buffer';
-import { runAudit } from '../engine/orchestrator.js';
+import { StratadsOrchestrator } from '../engine/stratads-orchestrator.js';
+
+const { app, BrowserWindow, ipcMain, shell, dialog } = pkg;
 
 if (typeof globalThis.File === 'undefined') {
   globalThis.File = File;
@@ -152,9 +154,28 @@ ipcMain.on('start-audit', async (event, params) => {
     const log = msg => sender.send('audit-log', msg);
     const progress = pct => sender.send('audit-progress', pct);
 
-    const reportPath = await runAudit(params, log, progress, mainWindow);
-    sender.send('audit-complete', { success:true, path:reportPath });
+    // Utilisation de la nouvelle architecture StratAds
+    const orchestrator = new StratadsOrchestrator();
+    const result = await orchestrator.runAudit(params, log, progress, mainWindow);
+    
+    if (result.success) {
+      sender.send('audit-complete', { 
+        success: true, 
+        path: result.outputDir,
+        reportFile: result.report.filename,
+        auditType: result.type,
+        pricing: orchestrator.getPricing(result.type)
+      });
+    } else {
+      sender.send('audit-complete', { 
+        success: false, 
+        error: result.error 
+      });
+    }
   } catch (e) {
-    event.sender.send('audit-complete', { success:false, error:e.message });
+    event.sender.send('audit-complete', { 
+      success: false, 
+      error: e.message 
+    });
   }
 });
