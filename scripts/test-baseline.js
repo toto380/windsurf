@@ -296,6 +296,258 @@ async function test_ga4_getStartDate() {
   assert(getStartDate('unknown') === d28.toISOString().split('T')[0], '_getStartDate("unknown") → 28 days fallback');
 }
 
+// ─── New tests: metric calculation correctness ──────────────────────────────
+
+async function test_forecast_monthly_normalization() {
+  console.log('\n📋 Test 10: ForecastEngine — baseline normalisé en sessions/mois');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  // 9000 total sessions over 90 days → 3000/month
+  const inputs = {
+    analysisWindow: { days: 90 },
+    baseline: {
+      sessions:    { value: 9000,  source: 'GA4', confidence: 'HIGH' },
+      conversions: { value: 270,   source: 'GA4', confidence: 'HIGH' },
+      revenue:     { value: 27000, source: 'GA4', confidence: 'HIGH' },
+      spend:       { value: 3000,  source: 'Ads CSV', confidence: 'HIGH' }
+    },
+    metrics: {
+      conversionRate: { value: 3,   source: 'Calculé', confidence: 'HIGH' },
+      aov:            { value: 100, source: 'Calculé', confidence: 'HIGH' },
+      cac: { value: null }, roas: { value: 9 }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: true },
+    dataCoverage: 100, confidenceGlobal: 'HIGH'
+  };
+
+  const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+  const r = eng.run();
+
+  assert(r.dataStatus === 'ok', 'Forecast status = ok');
+  // Conservative M1: baseSessions * 1.0 = 3000 (90d period → 9000/3 = 3000/month)
+  assert(r.projection.timeline.traffic.conservative[0] === 3000,
+    'M1 conservative = 3000 sessions (9000 / 3 mois)');
+  assert(r.projection.assumptions[1] === 'Baseline trafic: 3000 sessions/mois',
+    'Assumption affiche sessions/mois correct');
+}
+
+async function test_forecast_null_cr_aov_no_nan() {
+  console.log('\n📋 Test 11: ForecastEngine — CR/AOV null → pas de NaN');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  const inputs = {
+    analysisWindow: { days: 30 },
+    baseline: {
+      sessions:    { value: 1000, source: 'GSC (Clicks Proxy)', confidence: 'MEDIUM' },
+      conversions: { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      revenue:     { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      spend:       { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' }
+    },
+    metrics: {
+      conversionRate: { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      aov:            { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      cac: { value: null }, roas: { value: null }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: false },
+    dataCoverage: 25, confidenceGlobal: 'LOW'
+  };
+
+  const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+  const r = eng.run();
+
+  const json = JSON.stringify(r);
+  assert(!json.includes('"NaN"') && !json.includes('NaN'), 'Aucun NaN dans le résultat forecast');
+  assert(r.dataStatus === 'ok', 'Forecast status = ok même sans CR/AOV');
+  assert(r.projection.timeline.revenue.conservative[0] === 0,
+    'Revenue M1 = 0 quand AOV null (pas NaN)');
+}
+
+async function test_forecast_no_reference_error() {
+  console.log('\n📋 Test 12: ForecastEngine — pas de ReferenceError (paidNote/estimatedPaidSessions)');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  const inputs = {
+    analysisWindow: { days: 30 },
+    baseline: {
+      sessions:    { value: 500, source: 'GA4', confidence: 'HIGH' },
+      conversions: { value: 10, source: 'GA4', confidence: 'HIGH' },
+      revenue:     { value: 1000, source: 'GA4', confidence: 'HIGH' },
+      spend:       { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' }
+    },
+    metrics: {
+      conversionRate: { value: 2, source: 'Calculé', confidence: 'HIGH' },
+      aov:            { value: 100, source: 'Calculé', confidence: 'HIGH' },
+      cac: { value: null }, roas: { value: null }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: true },
+    dataCoverage: 75, confidenceGlobal: 'HIGH'
+  };
+
+  let error = null;
+  try {
+    const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+    eng.run();
+  } catch (e) {
+    error = e;
+  }
+  assert(error === null, 'Aucune ReferenceError (paidNote/estimatedPaidSessions supprimés)');
+}
+
+async function test_ads_kpi_null_guard() {
+  console.log('\n📋 Test 13: normalizeAdsData — CPA/CPC null quand conversions/clicks = 0');
+
+  // Simulate the normalizeAdsData KPI block with zero conversions/clicks
+  function computeKPIs(spend, conversions, clicks, value) {
+    const kpis = { roas: null, cpa: null, cpc: null, ctr: null, cr: null };
+    if (spend > 0) {
+      kpis.roas = value / spend;
+      kpis.cpa = conversions > 0 ? spend / conversions : null;
+      kpis.cpc = clicks > 0 ? spend / clicks : null;
+    }
+    return kpis;
+  }
+
+  // Case 1: spend but no conversions/clicks
+  const k1 = computeKPIs(1000, 0, 0, 0);
+  assert(k1.cpa === null, 'CPA = null quand conversions = 0');
+  assert(k1.cpc === null, 'CPC = null quand clicks = 0');
+  assert(k1.roas === 0, 'ROAS = 0 quand value = 0');
+
+  // Case 2: spend with real conversions/clicks
+  const k2 = computeKPIs(1000, 20, 500, 5000);
+  assert(Math.abs(k2.cpa - 50) < 0.001, 'CPA = 50 (1000/20)');
+  assert(Math.abs(k2.cpc - 2) < 0.001, 'CPC = 2 (1000/500)');
+  assert(Math.abs(k2.roas - 5) < 0.001, 'ROAS = 5 (5000/1000)');
+}
+
+async function test_report_bugs() {
+  console.log('\n📋 Test 14: ReportGenerator — tous les bugs corrigés');
+
+  const { ReportGenerator } = require('../src/backend/report.js');
+
+  // Build minimal results that exercised every fixed path
+  const results = {
+    meta: { company: 'TestCo', url: 'https://test.com', auditType: 'private',
+            date: new Date().toISOString(), version: '3.0', duration: 5 },
+    scores: { global: 72, technical: 68, marketing: 55, data: 40, maturity: 'Intermédiaire' },
+    technical: {
+      performance: { loadTime: 2.4, grade: 'B', score: 68, lcp: '2.1s', cls: '0.05',
+                     ttfb: '0.4s', pageWeight: 420000, https: true },
+      crawl:   { pagesAnalyzed: 45, errors: [], robots: { present: true },
+                 sitemap: { present: true }, redirects: [] },
+      seo:     { indexability: { score: 74, issues: [] } },
+      // correct path used by report: technical.security.https
+      security: { https: true, headers: { hsts: true, csp: false, xframe: false } }
+    },
+    marketing: {
+      tracking:   { detected: ['GA4', 'GTM'], score: 70,
+                    ga4: { present: true }, gtm: { present: true }, meta: { present: false },
+                    tiktok: { present: false }, linkedin: { present: false }, googleAds: { present: false } },
+      conversion: { heuristicScore: 55 },
+      elements:   { hasCTA: true, hasForms: true, hasPhone: false, hasEmail: true, hasChat: false }
+    },
+    // recommendations use .problem, not .title
+    recommendations: [
+      { problem: 'Sitemap absent', priority: 'Haute', impact: '+10% indexation',
+        effort: 'Faible', estimatedGain: '+10%', category: 'SEO', evidence: 'Crawl' },
+      { problem: 'CPA élevé', priority: 'Moyenne', impact: 'Rentabilité améliorée',
+        effort: 'Moyen', estimatedGain: '-20% CPA', category: 'Ads', evidence: 'CSV' }
+    ],
+    roadmap: { quick: [{ problem: 'Sitemap absent' }], medium: [], long: [] },
+    forecast: {
+      dataStatus: 'ok',  // correct field (not .status)
+      projection: {
+        dataStatus: 'ok',
+        scenarios: {
+          // correct field: .sessions (not .traffic)
+          conservative: { sessions: 3000, conversions: 90,  revenue: 9000,  cr: '3.00' },
+          realistic:    { sessions: 3150, conversions: 100, revenue: 10000, cr: '3.17' },
+          ambitious:    { sessions: 3450, conversions: 120, revenue: 12000, cr: '3.48' }
+        },
+        timeline: { labels: ['M1','M2','M3'],
+          traffic:  { conservative: [3000,3000,3000], realistic: [3050,3100,3150], ambitious: [3150,3300,3450] },
+          revenue:  { conservative: [9000,9000,9000], realistic: [9500,9750,10000], ambitious: [10500,11000,12000] }
+        },
+        assumptions: ['Baseline trafic: 3000 sessions/mois', 'ASSUMPTION CRO: Réaliste (+5%)']
+      }
+    },
+    // quickWins is { generated, count, items } — NOT a plain array
+    quickWins: {
+      generated: true, count: 1,
+      items: [{ title: 'Optimisation Conversion', impact: 'Élevé', effort: 'Moyen',
+                observation: 'CR < 2%', action: 'A/B test CTA', potential: 40, confidence: 'MEDIUM' }]
+    },
+    // scalingPlan uses .baseMode (not .mode)
+    scalingPlan: {
+      generated: true, baseMode: 'private',
+      dataSource: 'GA4/GSC/Ads',
+      phases: [{ name: 'Phase 1', duration: '1-2 mois', focus: 'Tracking', actions: ['Vérifier GA4'], expectedGain: '+10%' }],
+      kpis: { primary: [{ name: 'Trafic', baseline: 3000, target3m: 3600, target6m: 4500, source: 'GA4' }] },
+      milestones: [{ month: 1, name: 'Tracking OK', criteria: 'GA4 actif', critical: false }]
+    },
+    forecastInputsFinal: {
+      analysisWindow: { days: 90, startDate: '2025-12-06', endDate: '2026-03-06' },
+      // baseline has only: sessions, conversions, revenue, spend
+      baseline: {
+        sessions:    { value: 9000,   source: 'GA4',      confidence: 'HIGH' },
+        conversions: { value: 270,    source: 'GA4',      confidence: 'HIGH' },
+        revenue:     { value: 27000,  source: 'GA4',      confidence: 'HIGH' },
+        spend:       { value: 3000,   source: 'Ads CSV',  confidence: 'HIGH' }
+      },
+      // derived metrics live in .metrics, NOT in .baseline
+      metrics: {
+        conversionRate: { value: 3.0,  source: 'Calculé', confidence: 'HIGH' },
+        aov:            { value: 100,  source: 'Calculé', confidence: 'HIGH' },
+        roas:           { value: 9.0,  source: 'Calculé', confidence: 'MEDIUM' },
+        cac:            { value: 11.1, source: 'Calculé', confidence: 'MEDIUM' }
+      },
+      dataCoverage: 100, confidenceGlobal: 'HIGH',
+      privateAvailability: { hasGA4: true, hasGSC: false, hasGTM: false, hasAds: true }
+    },
+    ads: { normalized: { totals: { spend: 3000, conversions: 270, clicks: 6000, impressions: 80000, value: 27000 },
+           kpis: { cpa: 11.1, cpc: 0.5, roas: 9.0, ctr: 7.5, cr: null } } },
+    qualityGate: { passed: true, dataCoverage: 100, confidenceLevel: 'HIGH',
+                   sourcesUsed: ['crawl','ga4','google-ads-csv'], missing: [] },
+    evidence: [], unifiedData: {}
+  };
+
+  let html, err;
+  try {
+    const gen = new ReportGenerator(results);
+    const out = await gen.generate();
+    html = out.html;
+  } catch (e) { err = e; }
+
+  assert(!err, `Pas d'erreur à la génération HTML (${err?.message || 'ok'})`);
+  assert(typeof html === 'string' && html.length > 500, 'HTML généré non vide');
+
+  // Bug 1: technical.security.https — no crash, HTTPS row present
+  assert(html.includes('✅') || html.includes('❌'), 'Ligne HTTPS rendue sans TypeError');
+
+  // Bug 2: rec.problem displayed (not undefined)
+  assert(html.includes('Sitemap absent'),  'rec.problem affiché correctement');
+  assert(!html.includes('>undefined<'),    'Aucun champ undefined dans le HTML');
+
+  // Bug 3: derived metrics from forecastInputsFinal.metrics shown correctly
+  assert(html.includes('3.00%') || html.includes('3,00%') || html.includes('Taux conversion'),
+    'Taux conversion affiché (metrics.conversionRate)');
+  assert(html.includes('Panier moyen') || html.includes('AOV'), 'AOV affiché (metrics.aov)');
+
+  // Bug 4: quickWins.items rendered (1 item)
+  assert(html.includes('Optimisation Conversion'), 'Quick win title affiché depuis items[]');
+
+  // Bug 5: scalingPlan.baseMode → 'données privées'
+  assert(html.includes('données privées'), 'scalingPlan.baseMode détecté correctement');
+
+  // Bug 6: forecast.dataStatus = 'ok' → projection shown (not disabled)
+  assert(html.includes('Prévisions de Croissance'), 'Section forecast présente');
+  assert(!html.includes('Prévisions indisponibles'), 'Prévisions non bloquées à tort');
+
+  // Bug 7: scenarios.*.sessions displayed (3000)
+  assert(html.includes('3') && (html.includes('3 000') || html.includes('3000')),
+    'Valeur sessions scénario affichée (pas .traffic)');
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -310,6 +562,11 @@ async function test_ga4_getStartDate() {
     await test_no_nan_values();
     await test_structured_output();
     await test_ga4_getStartDate();
+    await test_forecast_monthly_normalization();
+    await test_forecast_null_cr_aov_no_nan();
+    await test_forecast_no_reference_error();
+    await test_ads_kpi_null_guard();
+    await test_report_bugs();
   } catch (err) {
     console.error('\n💥 Unexpected test runner error:', err.stack || err);
     failed++;

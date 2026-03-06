@@ -1,4 +1,5 @@
 const { GoogleAuth } = require('google-auth-library');
+const { google } = require('googleapis');
 
 class GTMConnector {
   constructor(serviceAccountPath, accountId, containerId) {
@@ -28,8 +29,7 @@ class GTMConnector {
       if (!ok) throw new Error('Authentication failed');
     }
 
-    const tagmanager = await import('googleapis').then(mod => mod.tagmanager('v2'));
-    const client = tagmanager.tagmanager({ version: 'v2', auth: this.auth });
+    const client = google.tagmanager({ version: 'v2', auth: this.auth });
 
     try {
       // 1. Get account info

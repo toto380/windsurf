@@ -28,8 +28,7 @@ class GSCConnector {
       if (!ok) throw new Error('Authentication failed');
     }
 
-    const searchconsole = await import('googleapis').then(mod => mod.googlewebmasters('v1'));
-    const client = searchconsole.searchconsole({ version: 'v1', auth: this.auth });
+    const client = google.searchconsole({ version: 'v1', auth: this.auth });
 
     try {
       // 1. Get site info

@@ -94,7 +94,7 @@ class QuickWinsEngine {
       this.wins.push({
         title: '🎯 Amélioration Taux de Conversion',
         observation: `Taux de conversion actuel: ${cr.toFixed(2)}% (benchmark: 2-3%)`,
-        proof: `${sessions.toLocaleString()} sessions/mois, ${cr.toFixed(2)}% conversion = ${Math.round(sessions * cr / 100)} conversions`,
+        proof: `${sessions != null ? sessions.toLocaleString() : 'N/A'} sessions/mois, ${cr.toFixed(2)}% conversion = ${sessions != null ? Math.round(sessions * cr / 100) : 'N/A'} conversions`,
         impact: 'Élevé',
         effort: 'Moyen',
         action: 'Audit UX, simplification du funnel, A/B testing sur les CTA principaux',
