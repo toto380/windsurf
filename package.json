@@ -2,10 +2,10 @@
   "name": "stratads-audit-v3",
   "version": "3.0.0",
   "description": "StratAds Audit V3 - Architecture Propre",
-  "main": "src/main/main-final.js",
+  "main": "src/main/main.js",
   "scripts": {
-    "start": "electron src/main/main-direct.js",
-    "dev": "electron src/main/main-direct.js",
+    "start": "electron src/main/main.js",
+    "dev": "electron src/main/main.js",
     "cli:fast": "node scripts/cli.js -t fast",
     "cli:public": "node scripts/cli.js -t public",
     "cli:private": "node scripts/cli.js -t private",
