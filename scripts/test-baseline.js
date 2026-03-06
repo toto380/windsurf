@@ -296,6 +296,130 @@ async function test_ga4_getStartDate() {
   assert(getStartDate('unknown') === d28.toISOString().split('T')[0], '_getStartDate("unknown") → 28 days fallback');
 }
 
+// ─── New tests: metric calculation correctness ──────────────────────────────
+
+async function test_forecast_monthly_normalization() {
+  console.log('\n📋 Test 10: ForecastEngine — baseline normalisé en sessions/mois');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  // 9000 total sessions over 90 days → 3000/month
+  const inputs = {
+    analysisWindow: { days: 90 },
+    baseline: {
+      sessions:    { value: 9000,  source: 'GA4', confidence: 'HIGH' },
+      conversions: { value: 270,   source: 'GA4', confidence: 'HIGH' },
+      revenue:     { value: 27000, source: 'GA4', confidence: 'HIGH' },
+      spend:       { value: 3000,  source: 'Ads CSV', confidence: 'HIGH' }
+    },
+    metrics: {
+      conversionRate: { value: 3,   source: 'Calculé', confidence: 'HIGH' },
+      aov:            { value: 100, source: 'Calculé', confidence: 'HIGH' },
+      cac: { value: null }, roas: { value: 9 }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: true },
+    dataCoverage: 100, confidenceGlobal: 'HIGH'
+  };
+
+  const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+  const r = eng.run();
+
+  assert(r.dataStatus === 'ok', 'Forecast status = ok');
+  // Conservative M1: baseSessions * 1.0 = 3000 (90d period → 9000/3 = 3000/month)
+  assert(r.projection.timeline.traffic.conservative[0] === 3000,
+    'M1 conservative = 3000 sessions (9000 / 3 mois)');
+  assert(r.projection.assumptions[1] === 'Baseline trafic: 3000 sessions/mois',
+    'Assumption affiche sessions/mois correct');
+}
+
+async function test_forecast_null_cr_aov_no_nan() {
+  console.log('\n📋 Test 11: ForecastEngine — CR/AOV null → pas de NaN');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  const inputs = {
+    analysisWindow: { days: 30 },
+    baseline: {
+      sessions:    { value: 1000, source: 'GSC (Clicks Proxy)', confidence: 'MEDIUM' },
+      conversions: { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      revenue:     { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      spend:       { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' }
+    },
+    metrics: {
+      conversionRate: { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      aov:            { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' },
+      cac: { value: null }, roas: { value: null }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: false },
+    dataCoverage: 25, confidenceGlobal: 'LOW'
+  };
+
+  const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+  const r = eng.run();
+
+  const json = JSON.stringify(r);
+  assert(!json.includes('"NaN"') && !json.includes('NaN'), 'Aucun NaN dans le résultat forecast');
+  assert(r.dataStatus === 'ok', 'Forecast status = ok même sans CR/AOV');
+  assert(r.projection.timeline.revenue.conservative[0] === 0,
+    'Revenue M1 = 0 quand AOV null (pas NaN)');
+}
+
+async function test_forecast_no_reference_error() {
+  console.log('\n📋 Test 12: ForecastEngine — pas de ReferenceError (paidNote/estimatedPaidSessions)');
+  const { ForecastEngine } = require('../src/backend/modules/forecast.js');
+
+  const inputs = {
+    analysisWindow: { days: 30 },
+    baseline: {
+      sessions:    { value: 500, source: 'GA4', confidence: 'HIGH' },
+      conversions: { value: 10, source: 'GA4', confidence: 'HIGH' },
+      revenue:     { value: 1000, source: 'GA4', confidence: 'HIGH' },
+      spend:       { value: null, source: 'unavailable', confidence: 'LOW', status: 'unavailable' }
+    },
+    metrics: {
+      conversionRate: { value: 2, source: 'Calculé', confidence: 'HIGH' },
+      aov:            { value: 100, source: 'Calculé', confidence: 'HIGH' },
+      cac: { value: null }, roas: { value: null }
+    },
+    adsTotals: null, privateAvailability: { hasGA4: true },
+    dataCoverage: 75, confidenceGlobal: 'HIGH'
+  };
+
+  let error = null;
+  try {
+    const eng = new ForecastEngine(inputs, { period: '3m', enableProjection: true }, {});
+    eng.run();
+  } catch (e) {
+    error = e;
+  }
+  assert(error === null, 'Aucune ReferenceError (paidNote/estimatedPaidSessions supprimés)');
+}
+
+async function test_ads_kpi_null_guard() {
+  console.log('\n📋 Test 13: normalizeAdsData — CPA/CPC null quand conversions/clicks = 0');
+
+  // Simulate the normalizeAdsData KPI block with zero conversions/clicks
+  function computeKPIs(spend, conversions, clicks, value) {
+    const kpis = { roas: null, cpa: null, cpc: null, ctr: null, cr: null };
+    if (spend > 0) {
+      kpis.roas = value / spend;
+      kpis.cpa = conversions > 0 ? spend / conversions : null;
+      kpis.cpc = clicks > 0 ? spend / clicks : null;
+    }
+    return kpis;
+  }
+
+  // Case 1: spend but no conversions/clicks
+  const k1 = computeKPIs(1000, 0, 0, 0);
+  assert(k1.cpa === null, 'CPA = null quand conversions = 0');
+  assert(k1.cpc === null, 'CPC = null quand clicks = 0');
+  assert(k1.roas === 0, 'ROAS = 0 quand value = 0');
+
+  // Case 2: spend with real conversions/clicks
+  const k2 = computeKPIs(1000, 20, 500, 5000);
+  assert(Math.abs(k2.cpa - 50) < 0.001, 'CPA = 50 (1000/20)');
+  assert(Math.abs(k2.cpc - 2) < 0.001, 'CPC = 2 (1000/500)');
+  assert(Math.abs(k2.roas - 5) < 0.001, 'ROAS = 5 (5000/1000)');
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -310,6 +434,10 @@ async function test_ga4_getStartDate() {
     await test_no_nan_values();
     await test_structured_output();
     await test_ga4_getStartDate();
+    await test_forecast_monthly_normalization();
+    await test_forecast_null_cr_aov_no_nan();
+    await test_forecast_no_reference_error();
+    await test_ads_kpi_null_guard();
   } catch (err) {
     console.error('\n💥 Unexpected test runner error:', err.stack || err);
     failed++;

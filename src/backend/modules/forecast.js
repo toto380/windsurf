@@ -34,9 +34,13 @@ class ForecastEngine {
 
     // 2. Prepare Variables
     const months = PERIOD_TO_MONTHS[this.settings.period] || 3;
-    const baselineSessions = this.inputs.baseline.sessions.value;
-    const currentCR = this.inputs.metrics.conversionRate.value / 100;
-    const currentAOV = this.inputs.metrics.aov.value;
+    // Normalize sessions to monthly rate: total sessions / (period in months)
+    const daysInPeriod = this.inputs.analysisWindow?.days || 30;
+    const monthsInPeriod = daysInPeriod / 30;
+    const baselineSessions = Math.round(this.inputs.baseline.sessions.value / monthsInPeriod);
+    // Null-guard: treat missing CR/AOV as 0 (pure traffic forecast)
+    const currentCR = (this.inputs.metrics.conversionRate?.value ?? 0) / 100;
+    const currentAOV = this.inputs.metrics.aov?.value ?? 0;
     const cpc = this.deriveCPC();
     
     // 3. Run enabled modes
@@ -151,7 +155,7 @@ class ForecastEngine {
       assumptions: [
         `Période: ${months} mois`,
         `Baseline trafic: ${Math.round(baselineSessions)} sessions/mois`,
-        cpc ? `Impact Paid: ~${Math.round(estimatedPaidSessions)} sessions ajoutées (CPC ${cpc.toFixed(2)}€)` : paidNote,
+        cpc ? `CPC actuel: ${cpc.toFixed(2)}€` : 'Paid: non calculé (CPC indisponible)',
         `ASSUMPTION CRO: Réaliste (+5%), Ambitieux (+15%)`,
         ...this.assumptions
       ],

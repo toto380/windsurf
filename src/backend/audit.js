@@ -827,8 +827,8 @@ class AuditEngine {
     // Calculate KPIs from totals
     if (normalized.totals.spend > 0) {
       normalized.kpis.roas = normalized.totals.value / normalized.totals.spend;
-      normalized.kpis.cpa = normalized.totals.spend / (normalized.totals.conversions || 1);
-      normalized.kpis.cpc = normalized.totals.spend / (normalized.totals.clicks || 1);
+      normalized.kpis.cpa = normalized.totals.conversions > 0 ? normalized.totals.spend / normalized.totals.conversions : null;
+      normalized.kpis.cpc = normalized.totals.clicks > 0 ? normalized.totals.spend / normalized.totals.clicks : null;
     }
     if (normalized.totals.impressions > 0) {
       normalized.kpis.ctr = (normalized.totals.clicks / normalized.totals.impressions) * 100;
@@ -1015,7 +1015,7 @@ class AuditEngine {
 
     // Score data (PRIVATE/FULL uniquement)
     if (this.auditType === 'private' || this.auditType === 'full') {
-      const hasAdsData = this.results.data?.ads?.google?.imported || this.results.data?.ads?.meta?.imported;
+      const hasAdsData = this.results.ads?.csv?.google?.imported || this.results.ads?.csv?.meta?.imported;
       this.results.scores.data = hasAdsData ? 70 : 30;
     }
 
