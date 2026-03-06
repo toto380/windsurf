@@ -1,0 +1,406 @@
+import { DataContract } from './dataContract.js';
+
+const PERIOD_TO_MONTHS = {
+  '3m': 3,
+  '6m': 6,
+  '12m': 12
+};
+
+const OPTIMIZATION_KEYS = {
+  seo: ['seo'],
+  performance: ['performance'],
+  tracking: ['tracking'],
+  conversion: ['conversion'],
+  public_complet: ['seo', 'performance', 'conversion'],
+  full_growth: ['seo', 'performance', 'tracking', 'conversion']
+};
+
+const EFFORT_MULTIPLIER = {
+  faible: 0.6,
+  modéré: 1,
+  modere: 1,
+  élevé: 1.3,
+  eleve: 1.3
+};
+
+const DEFAULT_SETTINGS = {
+  period: '3m',
+  optimizationType: 'full_growth',
+  effort: 'modéré',
+  budget: null,
+  sector: ''
+};
+
+export class ForecastEngine {
+  constructor(results, settings = {}) {
+    this.results = results || {};
+    this.settings = { ...DEFAULT_SETTINGS, ...settings };
+    if (this.settings.effort === 'modéré') {
+      this.settings.effort = 'modéré';
+    }
+    this.assumptions = [];
+  }
+
+  run() {
+    const context = this.collectContext();
+    const baselineTraffic = context.baselineTraffic;
+
+    // NEW: If no analytics data, return disabled status
+    if (!baselineTraffic || baselineTraffic <= 0 || context.dataStatus === 'disabled') {
+      return {
+        ...DataContract.schemas.forecast,
+        dataStatus: 'disabled',
+        settings: { ...this.settings },
+        assumptions: context.assumptions.length > 0 
+          ? context.assumptions 
+          : ['Prévisions indisponibles : connexion aux données analytics requise (GA4 ou GSC).']
+      };
+    }
+
+    const conversionRate = this.computeConversionRate(context, baselineTraffic);
+    const uplift = this.estimateUplift(context);
+    const scenarios = this.buildScenarios(baselineTraffic, conversionRate, uplift);
+    const timeline = this.buildTimeline(baselineTraffic, scenarios, uplift);
+    const performanceImpact = this.estimatePerformanceImpact(context, uplift);
+    const roiEstimate = this.computeROI(scenarios, conversionRate, context);
+    const confidenceScore = this.computeConfidence(context);
+
+    return {
+      dataStatus: context.dataStatus,
+      settings: { ...this.settings },
+      baselineTraffic: Math.round(baselineTraffic),
+      projectedTrafficLow: Math.round(scenarios.lowTraffic),
+      projectedTrafficBase: Math.round(scenarios.baseTraffic),
+      projectedTrafficHigh: Math.round(scenarios.highTraffic),
+      projectedConversions: {
+        baseline: Math.round(scenarios.baselineConversions),
+        low: Math.round(scenarios.lowConversions),
+        base: Math.round(scenarios.baseConversions),
+        high: Math.round(scenarios.highConversions)
+      },
+      trafficForecast: timeline.traffic,
+      conversionForecast: timeline.conversions,
+      performanceImpact,
+      roiEstimate,
+      confidenceScore,
+      assumptions: [...context.assumptions, ...this.assumptions]
+    };
+  }
+
+  collectContext() {
+    const context = {
+      dataStatus: 'non mesuré',
+      baselineTraffic: 0,
+      // Try both new structure (privateData) and legacy (data)
+      ga4Sessions: this.parseNumber(
+        this.results?.privateData?.ga4?.metrics?.sessions ||
+        this.results?.data?.ga4?.sessions
+      ),
+      gscClicks: this.parseNumber(
+        this.results?.privateData?.gsc?.metrics?.clicks ||
+        this.results?.data?.gsc?.clicks
+      ),
+      conversionEvents: this.parseNumber(
+        this.results?.privateData?.ga4?.metrics?.conversions ||
+        this.results?.data?.ga4?.conversions
+      ),
+      // Try to get ads data from multiple sources
+      adsRevenue: this.parseNumber(
+        (this.results?.ads?.csv?.google?.totals?.value || 0) +
+        (this.results?.ads?.csv?.meta?.totals?.value || 0) +
+        (this.results?.ads?.api?.google?.totals?.value || 0) +
+        (this.results?.ads?.api?.meta?.totals?.value || 0) +
+        (this.results?.privateData?.googleAds?.metrics?.value || 0) +
+        (this.results?.privateData?.metaAds?.metrics?.value || 0)
+      ),
+      averageOrderValue: this.deriveAverageOrderValue(),
+      seoScore: this.results?.technical?.crawl?.seo?.score ?? this.results?.technical?.seo?.indexability?.score ?? 0,
+      performanceScore: this.results?.technical?.performance?.score ?? 0,
+      trackingScore: this.results?.marketing?.tracking?.score ?? 0,
+      conversionScore: this.results?.marketing?.conversion?.heuristicScore ?? 0,
+      crawlPages: this.results?.technical?.crawl?.pagesAnalyzed ?? 0,
+      trackingReliability: this.results?.marketing?.tracking?.detected?.length ?? 0,
+      assumptions: []
+    };
+
+    // Check if we have real analytics data
+    const hasGA4 = context.ga4Sessions > 0;
+    const hasGSC = context.gscClicks > 0;
+    const hasAds = context.adsRevenue > 0;
+
+    if (hasGA4) {
+      context.baselineTraffic = context.ga4Sessions / 3; // GA4 par défaut sur 90 jours
+      context.dataStatus = 'ok';
+      context.assumptions.push('Baseline trafic basé sur GA4 (90j, proratisé mensuellement).');
+    } else if (hasGSC) {
+      context.baselineTraffic = context.gscClicks / 3; // 90 jours Search Console
+      context.dataStatus = 'partiel';
+      context.assumptions.push('Baseline trafic estimé via Google Search Console (clics 90j).');
+    } else if (hasAds) {
+      // If only ads data available, we can still do some forecasting
+      context.dataStatus = 'partiel';
+      context.assumptions.push('Forecast basé uniquement sur les données Ads (pas de données GA4/GSC).');
+    } else {
+      // NO MORE FAKE TRAFFIC - Return 0 and mark as disabled
+      context.baselineTraffic = 0;
+      context.dataStatus = 'disabled';
+      context.assumptions.push('Prévisions indisponibles : connexion aux données analytics requise (GA4 ou GSC).');
+    }
+
+    return context;
+  }
+
+  computeConversionRate(context, baselineTraffic) {
+    let conversionRate = 0.01; // 1% par défaut conservateur
+
+    if (context.conversionEvents > 0 && baselineTraffic > 0) {
+      conversionRate = Math.min(0.25, context.conversionEvents / (baselineTraffic * 3));
+      this.assumptions.push('Taux de conversion dérivé des événements GA4.');
+    } else if (this.results?.marketing?.conversion?.ctas?.count > 0) {
+      const score = context.conversionScore || 0;
+      conversionRate = Math.max(0.005, Math.min(0.08, score / 1000));
+      this.assumptions.push('Taux de conversion estimé par score heuristique conversion.');
+    } else {
+      this.assumptions.push('Taux de conversion par défaut 1% utilisé faute de données mesurées.');
+    }
+
+    return conversionRate;
+  }
+
+  estimateUplift(context) {
+    const weights = {
+      seo: Math.max(0, 1 - (context.seoScore || 0) / 100),
+      performance: Math.max(0, 1 - (context.performanceScore || 0) / 100),
+      tracking: Math.max(0, 1 - (context.trackingScore || 0) / 100),
+      conversion: Math.max(0, 1 - (context.conversionScore || 0) / 100)
+    };
+
+    const activeKeys = OPTIMIZATION_KEYS[this.settings.optimizationType] || OPTIMIZATION_KEYS.full_growth;
+    const effortMultiplier = EFFORT_MULTIPLIER[this.settings.effort] || 1;
+
+    let baseUplift = 0;
+    for (const key of activeKeys) {
+      baseUplift += weights[key] || 0;
+    }
+    baseUplift = (baseUplift / activeKeys.length) * 0.35 * effortMultiplier;
+
+    if (context.trackingReliability < 2) {
+      baseUplift *= 0.8;
+      this.assumptions.push('Uplift réduit à cause d’un stack de tracking limité.');
+    }
+
+    baseUplift = Math.min(0.45, Math.max(0.05, baseUplift));
+
+    return {
+      low: baseUplift * 0.5,
+      base: baseUplift,
+      high: baseUplift * 1.4
+    };
+  }
+
+  buildScenarios(baselineTraffic, conversionRate, uplift) {
+    const months = PERIOD_TO_MONTHS[this.settings.period] || 3;
+
+    const baseline = baselineTraffic;
+    const lowTraffic = baseline * (1 + uplift.low);
+    const baseTraffic = baseline * (1 + uplift.base);
+    const highTraffic = baseline * (1 + uplift.high);
+
+    const baselineConversions = baseline * conversionRate;
+    const lowConversions = lowTraffic * conversionRate * 1.05;
+    const baseConversions = baseTraffic * conversionRate * 1.1;
+    const highConversions = highTraffic * conversionRate * 1.15;
+
+    return {
+      months,
+      baseline,
+      lowTraffic,
+      baseTraffic,
+      highTraffic,
+      baselineConversions,
+      lowConversions,
+      baseConversions,
+      highConversions
+    };
+  }
+
+  buildTimeline(baselineTraffic, scenarios, uplift) {
+    const months = scenarios.months;
+    const labels = Array.from({ length: months }, (_, i) => `M${i + 1}`);
+    const trafficTimeline = {
+      baseline: [],
+      low: [],
+      base: [],
+      high: [],
+      labels
+    };
+    const conversionTimeline = {
+      baseline: [],
+      projected: [],
+      labels
+    };
+
+    for (let i = 0; i < months; i++) {
+      const progress = (i + 1) / months;
+      const monthLow = baselineTraffic * (1 + uplift.low * progress * 0.9);
+      const monthBase = baselineTraffic * (1 + uplift.base * progress);
+      const monthHigh = baselineTraffic * (1 + uplift.high * Math.min(1, progress * 1.1));
+
+      trafficTimeline.baseline.push(Math.round(baselineTraffic));
+      trafficTimeline.low.push(Math.round(monthLow));
+      trafficTimeline.base.push(Math.round(monthBase));
+      trafficTimeline.high.push(Math.round(monthHigh));
+
+      conversionTimeline.baseline.push(Math.round(scenarios.baselineConversions));
+      conversionTimeline.projected.push(Math.round(scenarios.baseConversions * progress));
+    }
+
+    return { traffic: trafficTimeline, conversions: conversionTimeline };
+  }
+
+  estimatePerformanceImpact(context, uplift) {
+    const scoreGain = Math.round((100 - (context.performanceScore || 0)) * uplift.base * 0.6);
+    const perf = this.results?.technical?.performance || {};
+
+    const lcpGain = this.estimateMetricGain(perf.lcp, 0.25, uplift.base);
+    const clsGain = this.estimateMetricGain(perf.cls, 0.05, uplift.base * 0.7);
+    const ttfbGain = this.estimateMetricGain(perf.ttfb, 100, uplift.base);
+
+    return {
+      scoreGain: Math.max(0, scoreGain),
+      lcpGain,
+      clsGain,
+      ttfbGain
+    };
+  }
+
+  estimateMetricGain(currentValue, targetValue, upliftFactor) {
+    const current = this.parseNumber(currentValue);
+    if (!current) return 0;
+    const improvement = (current - targetValue) * upliftFactor * 0.6;
+    return improvement > 0 ? Number(improvement.toFixed(2)) : 0;
+  }
+
+  computeROI(scenarios, conversionRate, context) {
+    const budget = this.parseNumber(this.settings.budget);
+    const revenuePerConversion = context.averageOrderValue;
+    const conversionsGain = Math.max(0, scenarios.baseConversions - scenarios.baselineConversions);
+
+    if (!budget || !revenuePerConversion) {
+      if (!budget) this.assumptions.push('Budget d’optimisation non fourni : ROI indicatif uniquement.');
+      if (!revenuePerConversion) this.assumptions.push('Panier moyen absent : ROI financier non calculé.');
+      return {
+        budget: budget || null,
+        estimatedRevenueIncrease: null,
+        estimatedROI: null,
+        paybackPeriod: 'Non disponible'
+      };
+    }
+
+    const revenueIncrease = conversionsGain * revenuePerConversion;
+    const roi = revenueIncrease > 0 ? ((revenueIncrease - budget) / budget) : 0;
+    const monthlyGain = revenueIncrease / (scenarios.months || 1);
+    const payback = monthlyGain > 0 ? Math.max(0.5, budget / monthlyGain) : null;
+
+    return {
+      budget: Number(budget.toFixed(2)),
+      estimatedRevenueIncrease: Number(revenueIncrease.toFixed(2)),
+      estimatedROI: Number((roi * 100).toFixed(1)),
+      paybackPeriod: payback ? `${payback.toFixed(1)} mois` : 'Non disponible'
+    };
+  }
+
+  computeConfidence(context) {
+    // If forecast is disabled, return LOW confidence
+    if (context.dataStatus === 'disabled') {
+      return 'LOW';
+    }
+
+    let confidence = 'LOW';
+
+    if (context.ga4Sessions > 0 || context.gscClicks > 0) {
+      confidence = 'MEDIUM';
+    }
+
+    const strongTracking = (this.results?.marketing?.tracking?.score || 0) >= 60;
+    const goodCoverage = (context.ga4Sessions > 0 && context.gscClicks > 0 && context.crawlPages > 20);
+
+    if (confidence === 'MEDIUM' && strongTracking && goodCoverage) {
+      confidence = 'HIGH';
+    }
+
+    if (confidence === 'LOW') {
+      this.assumptions.push('Prévision limitée par manque de données mesurées (GA4/GSC manquants).');
+    }
+
+    return confidence;
+  }
+
+  deriveAverageOrderValue() {
+    // NEW: First check user-provided metricsConfig
+    const metricsConfig = this.results?.metricsConfig;
+    if (metricsConfig?.averageOrderValue > 0) {
+      this.assumptions.push('Panier moyen fourni par l\'utilisateur.');
+      return metricsConfig.averageOrderValue;
+    }
+    if (metricsConfig?.averageConversionValue > 0) {
+      this.assumptions.push('Valeur moyenne de conversion fournie par l\'utilisateur.');
+      return metricsConfig.averageConversionValue;
+    }
+
+    // Try to derive from ads data (new structure: ads.csv or ads.api)
+    const ads = this.results?.ads;
+    const csvGoogle = ads?.csv?.google?.totals;
+    const csvMeta = ads?.csv?.meta?.totals;
+    const apiGoogle = ads?.api?.google?.totals;
+    const apiMeta = ads?.api?.meta?.totals;
+
+    // Prefer API data (more recent), fallback to CSV
+    const googleTotals = apiGoogle || csvGoogle;
+    const metaTotals = apiMeta || csvMeta;
+
+    const googleValue = this.parseNumber(googleTotals?.value);
+    const googleConversions = this.parseNumber(googleTotals?.conversions);
+    const metaValue = this.parseNumber(metaTotals?.value);
+    const metaConversions = this.parseNumber(metaTotals?.conversions);
+
+    const totalValue = (googleValue || 0) + (metaValue || 0);
+    const totalConversions = (googleConversions || 0) + (metaConversions || 0);
+
+    if (totalValue > 0 && totalConversions > 0) {
+      this.assumptions.push('Panier moyen estimé via données Ads.');
+      return totalValue / totalConversions;
+    }
+
+    // Legacy fallback for backward compatibility
+    const legacyGoogle = this.results?.data?.ads?.google?.totals;
+    const legacyMeta = this.results?.data?.ads?.meta?.totals;
+    const legacyGoogleValue = this.parseNumber(legacyGoogle?.value);
+    const legacyGoogleConversions = this.parseNumber(legacyGoogle?.conversions);
+    const legacyMetaValue = this.parseNumber(legacyMeta?.value);
+    const legacyMetaConversions = this.parseNumber(legacyMeta?.conversions);
+    const legacyTotalValue = (legacyGoogleValue || 0) + (legacyMetaValue || 0);
+    const legacyTotalConversions = (legacyGoogleConversions || 0) + (legacyMetaConversions || 0);
+
+    if (legacyTotalValue > 0 && legacyTotalConversions > 0) {
+      this.assumptions.push('Panier moyen estimé via données Ads (legacy).');
+      return legacyTotalValue / legacyTotalConversions;
+    }
+
+    return null;
+  }
+
+  parseNumber(value) {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[^0-9.,-]/g, '').replace(',', '.');
+      const num = Number(cleaned);
+      return Number.isFinite(num) ? num : 0;
+    }
+    return 0;
+  }
+}
+
+export default ForecastEngine;

@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "url": "https://example.com",
+    "company": "Example Corp",
+    "auditType": "private",
+    "date": "2024-01-15T12:00:00.000Z",
+    "version": "3.0.0",
+    "duration": 120
+  },
+  "scores": {
+    "global": 71,
+    "technical": 65,
+    "marketing": 68,
+    "data": 78,
+    "maturity": "Intermédiaire"
+  },
+  "technical": {
+    "crawl": {
+      "pagesAnalyzed": 20,
+      "errors": [],
+      "redirects": [],
+      "canonicals": [],
+      "sitemap": { "present": true, "url": "https://example.com/sitemap.xml", "valid": true, "urls": 156 },
+      "robots": { "present": true, "url": "https://example.com/robots.txt", "valid": true, "sitemapRef": "https://example.com/sitemap.xml" }
+    },
+    "performance": {
+      "loadTime": "2.1",
+      "fcp": "1.0s",
+      "lcp": "2.0s",
+      "cls": "0.03",
+      "ttfb": "0.3s",
+      "grade": "A",
+      "metrics": { "domInteractive": "0.9s", "domContentLoaded": "1.2s" }
+    },
+    "seo": {
+      "indexability": { "score": 88, "issues": [] },
+      "title": { "present": true, "optimal": true, "text": "Example Corp - Solutions digitales" },
+      "meta": { "present": true, "optimal": true, "description": "Expert en solutions digitales" },
+      "headings": { "h1": 1, "h2": 6, "h3": 8 },
+      "schema": { "present": true, "types": ["Organization"] },
+      "hreflang": { "present": false, "tags": [] }
+    },
+    "security": { "https": true, "headers": { "hsts": true, "csp": false, "xframe": true } }
+  },
+  "marketing": {
+    "tracking": {
+      "gtm": { "present": true, "containerId": "GTM-ABC123" },
+      "ga4": { "present": true, "measurementId": "G-XXXXXXXXXX" },
+      "meta": { "present": true, "pixelId": "1234567890" },
+      "tiktok": { "present": false, "pixelId": "" },
+      "linkedin": { "present": true, "insightTag": true },
+      "googleAds": { "present": true, "conversionTracking": true },
+      "hotjar": { "present": false },
+      "clarity": { "present": false },
+      "detected": ["Google Tag Manager", "Google Analytics 4", "Meta Pixel", "LinkedIn Insight", "Google Ads"],
+      "score": 85
+    },
+    "conversion": {
+      "ctas": { "count": 6, "elements": [{"text": "Demander un devis", "type": "button", "visible": true}], "score": 80 },
+      "forms": { "count": 2, "elements": [{"fields": 4, "hasSubmit": true, "action": "/contact", "visible": true}], "score": 75 },
+      "friction": { "score": 78, "issues": [] },
+      "heuristicScore": 77
+    },
+    "elements": { "hasCTA": true, "hasForms": true, "hasPhone": true, "hasEmail": true, "hasChat": true, "hasSocialProof": true, "hasTrustSignals": true }
+  },
+  "data": {
+    "ga4": { "available": false, "period": "90j", "sessions": "Non disponible", "conversions": "Non disponible", "channels": [], "revenue": "Non disponible", "topPages": [] },
+    "gsc": { "available": false, "period": "90j", "clicks": "Non disponible", "impressions": "Non disponible", "ctr": "Non disponible", "position": "Non disponible", "topQueries": [], "topPages": [] },
+    "ads": {
+      "google": {
+        "imported": true,
+        "campaigns": [
+          { "name": "Search - Marque", "impressions": 15420, "clicks": 847, "spend": "1250.50€", "conversions": 45, "value": 8750.00, "ctr": "5.49%", "cpc": "1.48€", "cpa": "27.79€", "roas": "7.00" },
+          { "name": "Search - Générique", "impressions": 28500, "clicks": 1235, "spend": "2100.75€", "conversions": 62, "value": 14280.00, "ctr": "4.33%", "cpc": "1.70€", "cpa": "33.88€", "roas": "6.80" },
+          { "name": "Display - Remarketing", "impressions": 45000, "clicks": 380, "spend": "450.00€", "conversions": 15, "value": 2700.00, "ctr": "0.84%", "cpc": "1.18€", "cpa": "30.00€", "roas": "6.00" }
+        ],
+        "totals": { "spend": "3801.25€", "clicks": 2462, "impressions": 88920, "conversions": 122, "value": "25730.00€" }
+      },
+      "meta": {
+        "imported": true,
+        "campaigns": [
+          { "name": "Conversion - Prospecting", "impressions": 45000, "clicks": 675, "spend": "810.00€", "conversions": 28, "value": 4200.00, "ctr": "1.50%", "cpc": "1.20€", "cpa": "28.93€", "roas": "5.19" },
+          { "name": "Retargeting - Website", "impressions": 12000, "clicks": 240, "spend": "288.00€", "conversions": 18, "value": 3240.00, "ctr": "2.00%", "cpc": "1.20€", "cpa": "16.00€", "roas": "11.25" }
+        ],
+        "totals": { "spend": "1098.00€", "clicks": 915, "impressions": 57000, "conversions": 46, "value": "7440.00€" }
+      }
+    },
+    "kpis": { "roas": "6.73", "cpa": "25.71€", "cpc": "1.45€", "cpm": "34.25€", "ctr": "2.78%", "cr": "5.33%", "totalSpend": "4899.25€", "totalValue": "33170.00€" }
+  },
+  "recommendations": [
+    { "id": "rec-1", "priority": "Haute", "category": "Data", "action": "Connecter GA4 via Service Account", "why": "Analyser les canaux de conversion", "impact": "+30% optimisation budget", "effort": "Moyen" },
+    { "id": "rec-2", "priority": "Haute", "category": "Ads", "action": "Augmenter budget Retargeting Meta", "why": "ROAS 11.25 très performant", "impact": "+500€ revenus/mois", "effort": "Faible" },
+    { "id": "rec-3", "priority": "Moyenne", "category": "Ads", "action": "Créer campagne TikTok Ads", "why": "Audience non exploitée", "impact": "+20% acquisition", "effort": "Élevé" },
+    { "id": "rec-4", "priority": "Moyenne", "category": "Tracking", "action": "Activer Enhanced Conversions", "why": "Améliorer la qualité des données", "impact": "+10% précision", "effort": "Moyen" }
+  ],
+  "roadmap": {
+    "quick": [
+      { "priority": "Haute", "category": "Ads", "action": "Augmenter budget Retargeting Meta", "impact": "+500€ revenus/mois" }
+    ],
+    "medium": [
+      { "priority": "Haute", "category": "Data", "action": "Connecter GA4 via Service Account", "impact": "+30% optimisation budget" },
+      { "priority": "Moyenne", "category": "Tracking", "action": "Activer Enhanced Conversions", "impact": "+10% précision" }
+    ],
+    "long": [
+      { "priority": "Moyenne", "category": "Ads", "action": "Créer campagne TikTok Ads", "impact": "+20% acquisition" }
+    ]
+  }
+}

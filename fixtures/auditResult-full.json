@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "url": "https://example.com",
+    "company": "Example Corp",
+    "auditType": "full",
+    "date": "2024-01-15T13:30:00.000Z",
+    "version": "3.0.0",
+    "duration": 240
+  },
+  "scores": {
+    "global": 82,
+    "technical": 85,
+    "marketing": 80,
+    "data": 82,
+    "maturity": "Avancé"
+  },
+  "technical": {
+    "crawl": {
+      "pagesAnalyzed": 100,
+      "errors": [],
+      "redirects": [{"from": "https://example.com/old", "to": "https://example.com/new", "code": 301}],
+      "canonicals": [],
+      "sitemap": { "present": true, "url": "https://example.com/sitemap.xml", "valid": true, "urls": 156 },
+      "robots": { "present": true, "url": "https://example.com/robots.txt", "valid": true, "sitemapRef": "https://example.com/sitemap.xml" }
+    },
+    "performance": {
+      "loadTime": "1.6",
+      "fcp": "0.8s",
+      "lcp": "1.5s",
+      "cls": "0.01",
+      "ttfb": "0.15s",
+      "grade": "A",
+      "metrics": { "domInteractive": "0.7s", "domContentLoaded": "0.9s" }
+    },
+    "seo": {
+      "indexability": { "score": 95, "issues": [] },
+      "title": { "present": true, "optimal": true, "text": "Example Corp - Solutions digitales premium" },
+      "meta": { "present": true, "optimal": true, "description": "Expert en solutions digitales pour entreprises ambitieuses. Découvrez nos services sur mesure." },
+      "headings": { "h1": 1, "h2": 10, "h3": 15 },
+      "schema": { "present": true, "types": ["Organization", "WebSite", "LocalBusiness"] },
+      "hreflang": { "present": false, "tags": [] }
+    },
+    "security": { "https": true, "headers": { "hsts": true, "csp": true, "xframe": true } }
+  },
+  "marketing": {
+    "tracking": {
+      "gtm": { "present": true, "containerId": "GTM-ABC123" },
+      "ga4": { "present": true, "measurementId": "G-XXXXXXXXXX" },
+      "meta": { "present": true, "pixelId": "1234567890" },
+      "tiktok": { "present": true, "pixelId": "C1234567890" },
+      "linkedin": { "present": true, "insightTag": true },
+      "googleAds": { "present": true, "conversionTracking": true },
+      "hotjar": { "present": true },
+      "clarity": { "present": false },
+      "detected": ["Google Tag Manager", "Google Analytics 4", "Meta Pixel", "LinkedIn Insight", "Google Ads", "Hotjar", "TikTok"],
+      "score": 95
+    },
+    "conversion": {
+      "ctas": { "count": 12, "elements": [{"text": "Demander un devis", "type": "button", "visible": true}, {"text": "Commencer maintenant", "type": "button", "visible": true}], "score": 92 },
+      "forms": { "count": 4, "elements": [{"fields": 3, "hasSubmit": true, "action": "/contact", "visible": true}], "score": 88 },
+      "friction": { "score": 88, "issues": [] },
+      "heuristicScore": 90
+    },
+    "elements": { "hasCTA": true, "hasForms": true, "hasPhone": true, "hasEmail": true, "hasChat": true, "hasSocialProof": true, "hasTrustSignals": true }
+  },
+  "data": {
+    "ga4": { "available": false, "period": "90j", "sessions": "Non disponible", "conversions": "Non disponible", "channels": [], "revenue": "Non disponible", "topPages": [] },
+    "gsc": { "available": false, "period": "90j", "clicks": "Non disponible", "impressions": "Non disponible", "ctr": "Non disponible", "position": "Non disponible", "topQueries": [], "topPages": [] },
+    "ads": {
+      "google": {
+        "imported": true,
+        "campaigns": [
+          { "name": "Search - Marque", "impressions": 15420, "clicks": 847, "spend": "1250.50€", "conversions": 45, "value": 8750.00, "ctr": "5.49%", "cpc": "1.48€", "cpa": "27.79€", "roas": "7.00" },
+          { "name": "Search - Générique", "impressions": 28500, "clicks": 1235, "spend": "2100.75€", "conversions": 62, "value": 14280.00, "ctr": "4.33%", "cpc": "1.70€", "cpa": "33.88€", "roas": "6.80" },
+          { "name": "Display - Remarketing", "impressions": 45000, "clicks": 380, "spend": "450.00€", "conversions": 15, "value": 2700.00, "ctr": "0.84%", "cpc": "1.18€", "cpa": "30.00€", "roas": "6.00" },
+          { "name": "YouTube - Awareness", "impressions": 125000, "clicks": 625, "spend": "750.00€", "conversions": 8, "value": 1200.00, "ctr": "0.50%", "cpc": "1.20€", "cpa": "93.75€", "roas": "1.60" }
+        ],
+        "totals": { "spend": "4551.25€", "clicks": 3087, "impressions": 213920, "conversions": 130, "value": "26930.00€" }
+      },
+      "meta": {
+        "imported": true,
+        "campaigns": [
+          { "name": "Conversion - Prospecting", "impressions": 45000, "clicks": 675, "spend": "810.00€", "conversions": 28, "value": 4200.00, "ctr": "1.50%", "cpc": "1.20€", "cpa": "28.93€", "roas": "5.19" },
+          { "name": "Retargeting - Website", "impressions": 12000, "clicks": 240, "spend": "288.00€", "conversions": 18, "value": 3240.00, "ctr": "2.00%", "cpc": "1.20€", "cpa": "16.00€", "roas": "11.25" },
+          { "name": "Advantage+ Shopping", "impressions": 35000, "clicks": 525, "spend": "630.00€", "conversions": 22, "value": 3960.00, "ctr": "1.50%", "cpc": "1.20€", "cpa": "28.64€", "roas": "6.29" }
+        ],
+        "totals": { "spend": "1728.00€", "clicks": 1440, "impressions": 92000, "conversions": 68, "value": "11400.00€" }
+      }
+    },
+    "kpis": { "roas": "5.92", "cpa": "32.46€", "cpc": "1.41€", "cpm": "23.50€", "ctr": "2.12%", "cr": "4.71%", "totalSpend": "6279.25€", "totalValue": "38330.00€" }
+  },
+  "benchmark": {
+    "type": "qualitatif",
+    "industry": "B2B Services",
+    "thresholds": {
+      "loadTime": { "good": "< 2s", "average": "2-4s", "poor": "> 4s" },
+      "ctr": { "good": "> 3%", "average": "1-3%", "poor": "< 1%" },
+      "conversionRate": { "good": "> 2%", "average": "1-2%", "poor": "< 1%" },
+      "roas": { "good": "> 5", "average": "3-5", "poor": "< 3" }
+    },
+    "notes": "Performance au-dessus de la moyenne secteur B2B Services. Recommandation: accélérer sur les canaux à fort ROAS."
+  },
+  "recommendations": [
+    { "id": "rec-1", "priority": "Haute", "category": "Scaling", "action": "Doubler budget Retargeting Meta", "why": "ROAS 11.25 exceptionnel", "impact": "+1000€ revenus/mois", "effort": "Faible" },
+    { "id": "rec-2", "priority": "Haute", "category": "Data", "action": "Connecter GA4 + GSC via Service Account", "why": "Analyse complète du funnel", "impact": "+40% optimisation", "effort": "Moyen" },
+    { "id": "rec-3", "priority": "Moyenne", "category": "Ads", "action": "Optimiser campagne YouTube", "why": "ROAS faible 1.60, réorienter budget", "impact": "+300€ économie/mois", "effort": "Moyen" },
+    { "id": "rec-4", "priority": "Moyenne", "category": "Expansion", "action": "Tester LinkedIn Ads", "why": "Audience B2B qualifiée non exploitée", "impact": "+25% leads qualifiés", "effort": "Élevé" },
+    { "id": "rec-5", "priority": "Basse", "category": "UX", "action": "Ajouter calculator ROI", "why": "Améliorer la conversion", "impact": "+15% conversion", "effort": "Moyen" }
+  ],
+  "roadmap": {
+    "quick": [
+      { "priority": "Haute", "category": "Scaling", "action": "Doubler budget Retargeting Meta", "impact": "+1000€ revenus/mois" },
+      { "priority": "Moyenne", "category": "Ads", "action": "Optimiser campagne YouTube", "impact": "+300€ économie/mois" }
+    ],
+    "medium": [
+      { "priority": "Haute", "category": "Data", "action": "Connecter GA4 + GSC via Service Account", "impact": "+40% optimisation" },
+      { "priority": "Basse", "category": "UX", "action": "Ajouter calculator ROI", "impact": "+15% conversion" }
+    ],
+    "long": [
+      { "priority": "Moyenne", "category": "Expansion", "action": "Tester LinkedIn Ads", "impact": "+25% leads qualifiés" }
+    ]
+  }
+}

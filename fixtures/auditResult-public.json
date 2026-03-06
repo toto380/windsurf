@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "url": "https://example.com",
+    "company": "Example Corp",
+    "auditType": "public",
+    "date": "2024-01-15T11:15:00.000Z",
+    "version": "3.0.0",
+    "duration": 180
+  },
+  "scores": {
+    "global": 74,
+    "technical": 78,
+    "marketing": 70,
+    "maturity": "Avancé"
+  },
+  "technical": {
+    "crawl": {
+      "pagesAnalyzed": 100,
+      "errors": [{"url": "https://example.com/old-page", "status": 404, "error": "Page non trouvée"}],
+      "redirects": [{"from": "https://example.com/old", "to": "https://example.com/new", "code": 301}],
+      "canonicals": [],
+      "sitemap": { "present": true, "url": "https://example.com/sitemap.xml", "valid": true, "urls": 156 },
+      "robots": { "present": true, "url": "https://example.com/robots.txt", "valid": true, "sitemapRef": "https://example.com/sitemap.xml" }
+    },
+    "performance": {
+      "loadTime": "1.9",
+      "fcp": "0.9s",
+      "lcp": "1.8s",
+      "cls": "0.02",
+      "ttfb": "0.2s",
+      "grade": "A",
+      "metrics": { "domInteractive": "0.8s", "domContentLoaded": "1.1s" }
+    },
+    "seo": {
+      "indexability": { "score": 92, "issues": ["1 erreur 404 détectée"] },
+      "title": { "present": true, "optimal": true, "text": "Example Corp - Solutions digitales premium" },
+      "meta": { "present": true, "optimal": true, "description": "Expert en solutions digitales pour entreprises ambitieuses. Découvrez nos services." },
+      "headings": { "h1": 1, "h2": 8, "h3": 12 },
+      "schema": { "present": true, "types": ["Organization", "WebSite"] },
+      "hreflang": { "present": false, "tags": [] }
+    },
+    "security": { "https": true, "headers": { "hsts": true, "csp": false, "xframe": true } }
+  },
+  "marketing": {
+    "tracking": {
+      "gtm": { "present": true, "containerId": "GTM-ABC123" },
+      "ga4": { "present": true, "measurementId": "G-XXXXXXXXXX" },
+      "meta": { "present": true, "pixelId": "1234567890" },
+      "tiktok": { "present": false, "pixelId": "" },
+      "linkedin": { "present": true, "insightTag": true },
+      "googleAds": { "present": false, "conversionTracking": false },
+      "hotjar": { "present": false },
+      "clarity": { "present": false },
+      "detected": ["Google Tag Manager", "Google Analytics 4", "Meta Pixel", "LinkedIn Insight"],
+      "score": 75
+    },
+    "conversion": {
+      "ctas": { "count": 8, "elements": [{"text": "Demander un devis", "type": "button", "visible": true}, {"text": "Nous contacter", "type": "a", "visible": true}], "score": 85 },
+      "forms": { "count": 3, "elements": [{"fields": 5, "hasSubmit": true, "action": "/contact", "visible": true}], "score": 80 },
+      "friction": { "score": 82, "issues": [] },
+      "heuristicScore": 82
+    },
+    "elements": { "hasCTA": true, "hasForms": true, "hasPhone": true, "hasEmail": true, "hasChat": true, "hasSocialProof": true, "hasTrustSignals": true }
+  },
+  "recommendations": [
+    { "id": "rec-1", "priority": "Haute", "category": "SEO", "action": "Corriger les erreurs 404", "why": "1 page en erreur détectée", "impact": "+3% indexation", "effort": "Faible" },
+    { "id": "rec-2", "priority": "Moyenne", "category": "Tracking", "action": "Activer Google Ads Conversion", "why": "Suivi des conversions manquant", "impact": "+20% ROI", "effort": "Faible" },
+    { "id": "rec-3", "priority": "Moyenne", "category": "Conversion", "action": "Ajouter témoignages clients", "why": "Renforcer la preuve sociale", "impact": "+12% conversion", "effort": "Moyen" },
+    { "id": "rec-4", "priority": "Basse", "category": "Performance", "action": "Implémenter CSP headers", "why": "Sécurité renforcée", "impact": "Sécurité", "effort": "Moyen" }
+  ],
+  "roadmap": {
+    "quick": [
+      { "priority": "Haute", "category": "SEO", "action": "Corriger les erreurs 404", "impact": "+3% indexation" },
+      { "priority": "Moyenne", "category": "Tracking", "action": "Activer Google Ads Conversion", "impact": "+20% ROI" }
+    ],
+    "medium": [
+      { "priority": "Moyenne", "category": "Conversion", "action": "Ajouter témoignages clients", "impact": "+12% conversion" }
+    ],
+    "long": [
+      { "priority": "Basse", "category": "Performance", "action": "Implémenter CSP headers", "impact": "Sécurité" }
+    ]
+  }
+}

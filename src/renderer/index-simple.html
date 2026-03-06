@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StratAds Audit - Premium</title>
+  <link rel="icon" href="./favicon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <img src="./favicon.png" alt="StratAds Logo" class="logo" />
+      <h1 class="title">StratAds Audit</h1>
+      <p class="subtitle">Premium Marketing Intelligence</p>
+    </header>
+
+    <main class="main-content">
+      <!-- URL Input -->
+      <div class="panel">
+        <h3>🌐 Site à Auditer</h3>
+        <div class="field">
+          <label>URL du site</label>
+          <input type="url" id="urlInput" placeholder="https://example.com" required />
+        </div>
+        <div class="field">
+          <label>Nom de l'entreprise</label>
+          <input type="text" id="companyInput" placeholder="Nom de votre entreprise" />
+        </div>
+      </div>
+
+      <!-- Audit Profile -->
+      <div class="panel">
+        <h3>⚙️ Type d'Audit</h3>
+        <div class="field">
+          <label>Profil d'audit</label>
+          <select id="auditProfileSelect">
+            <option value="fast">Prospection 2min - Gratuit</option>
+            <option value="public">Public Complet - 2500€</option>
+            <option value="private">Privé Complet - 5000€</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- API Access -->
+      <div class="panel" id="privateAccessBlock" style="display: none;">
+        <h3>🔐 Accès API Privés</h3>
+        <div class="field">
+          <label>Fichier JSON du compte de service</label>
+          <div class="file-input-group">
+            <input type="text" id="saJsonLabel" readonly placeholder="Aucun fichier sélectionné" />
+            <button type="button" id="saJsonBtn">📁 Parcourir</button>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>ID Propriété GA4</label>
+            <input type="text" id="ga4PropertyId" placeholder="properties/123456789" />
+          </div>
+          <div class="field">
+            <label>Période GA4</label>
+            <select id="ga4DateRange">
+              <option value="7days">7 jours</option>
+              <option value="30days">30 jours</option>
+              <option value="90days">90 jours</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>URL Site Google Search Console</label>
+            <input type="url" id="gscSiteUrl" placeholder="https://example.com" />
+          </div>
+          <div class="field">
+            <label>Période GSC</label>
+            <select id="gscDateRange">
+              <option value="7days">7 jours</option>
+              <option value="30days">30 jours</option>
+              <option value="90days">90 jours</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>ID Compte GTM</label>
+            <input type="text" id="gtmAccountId" placeholder="123456789" />
+          </div>
+          <div class="field">
+            <label>ID Conteneur GTM</label>
+            <input type="text" id="gtmContainerId" placeholder="GTM-XXXXXXX" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Test des connexions</label>
+          <button type="button" id="testConnectionsBtn" class="btnSecondary">🔧 Tester les connexions</button>
+          <small>Vérifiez les accès API avant de lancer l'audit</small>
+        </div>
+      </div>
+
+      <!-- API Imports -->
+      <div class="panel">
+        <h3>📊 Import de Données</h3>
+        <div class="field">
+          <label>Export Google Ads</label>
+          <div class="file-input-group">
+            <input type="text" id="adsImportPath" readonly placeholder="Aucun fichier sélectionné" />
+            <button type="button" id="adsImportBtn">📁 Parcourir</button>
+          </div>
+          <small>Fichier CSV d'export Google Ads (optionnel)</small>
+        </div>
+        <div class="field">
+          <label>Export Meta Ads</label>
+          <div class="file-input-group">
+            <input type="text" id="metaAdsImportPath" readonly placeholder="Aucun fichier sélectionné" />
+            <button type="button" id="metaAdsImportBtn">📁 Parcourir</button>
+          </div>
+          <small>Fichier CSV d'export Meta Ads (optionnel)</small>
+        </div>
+      </div>
+
+      <!-- Forecast Settings -->
+      <div class="panel">
+        <h3>📈 Prévisions Marketing</h3>
+        <div class="grid2">
+          <div class="field">
+            <label>Période de prévision</label>
+            <select id="forecastPeriod">
+              <option value="3months">3 mois</option>
+              <option value="6months">6 mois</option>
+              <option value="12months">12 mois</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Effort d'optimisation</label>
+            <select id="forecastEffort">
+              <option value="faible">Faible</option>
+              <option value="modéré">Modéré</option>
+              <option value="élevé">Élevé</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>Budget marketing (€)</label>
+            <input type="number" id="forecastBudget" placeholder="Budget mensuel" min="0" step="100" />
+            <small>Optionnel - pour calculer le ROI</small>
+          </div>
+          <div class="field">
+            <label>Secteur d'activité</label>
+            <input type="text" id="forecastSector" placeholder="ex: e-commerce, SaaS, services..." />
+            <small>Pour affiner les prévisions</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Settings -->
+      <div class="panel">
+        <h3>⚙️ Paramètres de sortie</h3>
+        <div class="grid2">
+          <div class="field">
+            <label>Langue du rapport</label>
+            <select id="langSelect">
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Dossier de sortie</label>
+            <div class="file-input-group">
+              <input type="text" id="outputDirPath" readonly placeholder="Dossier par défaut" />
+              <button type="button" id="outputDirBtn">📁 Choisir</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Logo personnalisé</label>
+          <div class="file-input-group">
+            <input type="text" id="logoPath" readonly placeholder="favicon.png (par défaut)" />
+            <button type="button" id="logoBtn">📁 Parcourir</button>
+          </div>
+          <small>Par défaut : favicon.png. Vous pouvez le remplacer.</small>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button type="button" id="startBtn" class="btn btnPrimary" style="flex: 1;">
+  🚀 Lancer l'Audit
+</button>
+      </div>
+    </main>
+
+    <!-- Status Area -->
+    <div id="status-area" class="hidden"></div>
+    
+    <!-- Progress Bar -->
+    <div id="progress" class="hidden"></div>
+
+    <!-- Results Panel -->
+    <div id="result-panel" class="panel hidden">
+      <h3 style="margin-top: 0; color: var(--primary);">📊 Résultats de l'Audit</h3>
+      <div id="report-location"></div>
+      <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <button type="button" id="openFolderBtn" class="btn btnSecondary">📁 Ouvrir le dossier</button>
+        <button type="button" id="openHTMLBtn" class="btn btnSecondary">🌐 Voir le rapport HTML</button>
+        <button type="button" id="openPDFBtn" class="btn btnSecondary">📄 Ouvrir le PDF</button>
+        <button type="button" id="copyPathBtn" class="btn btnSecondary">📋 Copier le chemin</button>
+      </div>
+      <div id="pathDetails" style="margin-top: 12px; font-size: 12px; color: var(--muted);"></div>
+    </div>
+  </div>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>

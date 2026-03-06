@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "url": "https://example.com",
+    "company": "Example Corp",
+    "auditType": "fast",
+    "date": "2024-01-15T10:30:00.000Z",
+    "version": "3.0.0",
+    "duration": 45
+  },
+  "scores": {
+    "global": 62,
+    "technical": 58,
+    "marketing": 65,
+    "maturity": "Intermédiaire"
+  },
+  "technical": {
+    "crawl": {
+      "pagesAnalyzed": 10,
+      "errors": [],
+      "redirects": [],
+      "canonicals": [],
+      "sitemap": { "present": true, "url": "https://example.com/sitemap.xml", "valid": true, "urls": 45 },
+      "robots": { "present": true, "url": "https://example.com/robots.txt", "valid": true, "sitemapRef": "" }
+    },
+    "performance": {
+      "loadTime": "2.8",
+      "fcp": "1.2s",
+      "lcp": "2.4s",
+      "cls": "0.05",
+      "ttfb": "0.4s",
+      "grade": "B",
+      "metrics": { "domInteractive": "1.1s", "domContentLoaded": "1.5s" }
+    },
+    "seo": {
+      "indexability": { "score": 85, "issues": [] },
+      "title": { "present": true, "optimal": true, "text": "Example Corp - Solutions digitales" },
+      "meta": { "present": true, "optimal": true, "description": "Expert en solutions digitales pour entreprises" },
+      "headings": { "h1": 1, "h2": 4, "h3": 6 },
+      "schema": { "present": false, "types": [] },
+      "hreflang": { "present": false, "tags": [] }
+    },
+    "security": { "https": true, "headers": { "hsts": false, "csp": false, "xframe": false } }
+  },
+  "marketing": {
+    "tracking": {
+      "gtm": { "present": true, "containerId": "GTM-ABC123" },
+      "ga4": { "present": true, "measurementId": "G-XXXXXXXXXX" },
+      "meta": { "present": false, "pixelId": "" },
+      "tiktok": { "present": false, "pixelId": "" },
+      "linkedin": { "present": false, "insightTag": false },
+      "googleAds": { "present": false, "conversionTracking": false },
+      "hotjar": { "present": false },
+      "clarity": { "present": false },
+      "detected": ["Google Tag Manager", "Google Analytics 4"],
+      "score": 40
+    },
+    "conversion": {
+      "ctas": { "count": 3, "elements": [{"text": "Contactez-nous", "type": "button", "visible": true}], "score": 60 },
+      "forms": { "count": 1, "elements": [{"fields": 4, "hasSubmit": true, "action": "", "visible": true}], "score": 70 },
+      "friction": { "score": 75, "issues": [] },
+      "heuristicScore": 68
+    },
+    "elements": { "hasCTA": true, "hasForms": true, "hasPhone": true, "hasEmail": true, "hasChat": false, "hasSocialProof": false, "hasTrustSignals": true }
+  },
+  "recommendations": [
+    { "id": "rec-1", "priority": "Haute", "category": "Tracking", "action": "Installer Meta Pixel", "why": "Mesure des conversions Facebook/Instagram", "impact": "+15% efficacité social ads", "effort": "Faible" },
+    { "id": "rec-2", "priority": "Moyenne", "category": "Conversion", "action": "Ajouter signaux de confiance", "why": "Réduire la friction", "impact": "+10% conversion", "effort": "Moyen" },
+    { "id": "rec-3", "priority": "Moyenne", "category": "Performance", "action": "Optimiser le LCP", "why": "Améliorer le Largest Contentful Paint", "impact": "+5% SEO", "effort": "Moyen" }
+  ],
+  "roadmap": { "quick": [], "medium": [], "long": [] }
+}
