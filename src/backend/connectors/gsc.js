@@ -83,8 +83,15 @@ class GSCConnector {
       const avgPosition = totalImpressions > 0 ? totalPosition / totalImpressions : 0;
       const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
+      const dataAvailable = totalClicks > 0 || totalImpressions > 0;
+
+      if (!dataAvailable) {
+        console.warn(`[GSC] Connexion OK mais aucune donnée sur la période (${dateRange}) pour ${this.siteUrl}`);
+      }
+
       return {
         status: 'ok',
+        dataAvailable,
         site: {
           url: this.siteUrl,
           permissionLevel: site.data.permissionLevel
@@ -98,8 +105,10 @@ class GSCConnector {
         },
         topQueries: this._parseTopQueries(topQueries.data.rows || []),
         topPages: this._parseTopPages(topPages.data.rows || []),
-        evidence: `Data fetched from GSC for ${this.siteUrl} over ${dateRange}`,
-        confidence: 'HIGH'
+        evidence: dataAvailable
+          ? `Data fetched from GSC for ${this.siteUrl} over ${dateRange}`
+          : `GSC connexion OK mais aucune donnée sur la période ${dateRange} pour ${this.siteUrl}`,
+        confidence: dataAvailable ? 'HIGH' : 'LOW'
       };
 
     } catch (error) {
