@@ -28,11 +28,8 @@ class GA4Connector {
       if (!ok) throw new Error('Authentication failed');
     }
 
-    const analyticsAdmin = await import('googleapis').then(mod => mod.googleanalyticsadmin('v1beta'));
-    const analyticsData = await import('googleapis').then(mod => mod.googleanalyticsdata('v1beta'));
-
-    const adminClient = analyticsAdmin.analyticsadmin({ version: 'v1beta', auth: this.auth });
-    const dataClient = analyticsData.analyticsdata({ version: 'v1beta', auth: this.auth });
+    const adminClient = google.analyticsadmin({ version: 'v1beta', auth: this.auth });
+    const dataClient = google.analyticsdata({ version: 'v1beta', auth: this.auth });
 
     try {
       // 1. Get property info to validate access

@@ -322,4 +322,6 @@ class ApiOrchestrator {
 
     return results;
   }
-};
+}
+
+module.exports = { ApiOrchestrator };
