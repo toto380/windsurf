@@ -96,7 +96,7 @@ class BaselineAutoScan {
     if (hasGSC)         this.log('🔌 GSC configuré');
     if (hasGoogleCsv)   this.log('📄 Google Ads CSV disponible');
     if (hasMetaCsv)     this.log('📄 Meta Ads CSV disponible');
-    if (!hasGoogleCsv)  { this.log('⚠️ Meta Ads CSV absent'); this.warnings.push('Google Ads CSV absent'); }
+    if (!hasGoogleCsv)  { this.log('⚠️ Google Ads CSV absent'); this.warnings.push('Google Ads CSV absent'); }
     if (!hasMetaCsv)    { this.log('⚠️ Meta Ads CSV absent');  this.warnings.push('Meta Ads CSV absent'); }
 
     this._hasGA4       = hasGA4;

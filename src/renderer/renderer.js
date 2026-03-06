@@ -626,7 +626,7 @@ if (els.logoBtn){
           const fmtMetric = (label, metric, unit = '') => {
             if (!metric) return `⚠️ ${label} : indisponible`;
             if (metric.status === 'unavailable' || metric.value === null) {
-              return `⚠️ ${label} unavailable : ${metric.reason || 'données manquantes'}`;
+              return `⚠️ ${label} indisponible : ${metric.reason || 'données manquantes'}`;
             }
             const v = typeof metric.value === 'number' ? metric.value.toFixed(2) : metric.value;
             return `✅ ${label} : ${v}${unit} (source: ${metric.source}, confiance: ${metric.confidence})`;
