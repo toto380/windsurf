@@ -22,23 +22,31 @@ class GA4Connector {
     }
   }
 
-  async fetchData(dateRange = '28d') {
+  async fetchData(dateRange = '28d', endDate) {
     if (!this.auth) {
       const ok = await this.authenticate();
       if (!ok) throw new Error('Authentication failed');
     }
 
+    const resolvedEndDate = endDate || new Date().toISOString().split('T')[0];
     const adminClient = google.analyticsadmin({ version: 'v1beta', auth: this.auth });
     const dataClient = google.analyticsdata({ version: 'v1beta', auth: this.auth });
 
+    // 1. Get property info to validate access (Admin API may not be enabled).
+    // propertyDisplayName may remain null if the Admin API is disabled; fallback to propertyId.
+    let propertyDisplayName = null;
     try {
-      // 1. Get property info to validate access
       const property = await adminClient.properties.get({ name: `properties/${this.propertyId}` });
-      
+      propertyDisplayName = property.data.displayName;
+    } catch (adminError) {
+      console.warn('[GA4] Analytics Admin API unavailable (property validation skipped):', adminError.message);
+    }
+
+    try {
       // 2. Run a report for sessions and conversions
       const report = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: 'today' }],
+        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
         metrics: [
           { name: 'sessions' },
           { name: 'conversions' },
@@ -52,7 +60,7 @@ class GA4Connector {
       // 3. Run a report for top pages
       const pagesReport = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: 'today' }],
+        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
         metrics: [
           { name: 'sessions' },
           { name: 'conversions' }
@@ -70,7 +78,7 @@ class GA4Connector {
       // 4. Run a report for channels
       const channelsReport = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: 'today' }],
+        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
         metrics: [
           { name: 'sessions' },
           { name: 'conversions' }
@@ -83,7 +91,7 @@ class GA4Connector {
       return {
         status: 'ok',
         property: {
-          name: property.data.displayName,
+          name: propertyDisplayName || this.propertyId,
           id: this.propertyId
         },
         dateRange,

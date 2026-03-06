@@ -14,15 +14,16 @@ class ApiOrchestrator {
 
   async fetchAllData() {
     const promises = [];
+    const baselineDate = new Date().toISOString().split('T')[0];
 
     // GA4
     if (this.params.serviceAccountData && this.params.ga4PropertyId) {
-      promises.push(this._fetchGA4());
+      promises.push(this._fetchGA4(baselineDate));
     }
 
     // GSC
     if (this.params.serviceAccountData && this.params.gscSiteUrl) {
-      promises.push(this._fetchGSC());
+      promises.push(this._fetchGSC(baselineDate));
     }
 
     // GTM
@@ -49,7 +50,7 @@ class ApiOrchestrator {
     return this.results;
   }
 
-  async _fetchGA4() {
+  async _fetchGA4(baselineDate) {
     try {
       const connector = new GA4Connector(
         this.params.serviceAccountData.path,
@@ -62,7 +63,7 @@ class ApiOrchestrator {
         throw new Error('analysisPeriodDays est requis et doit être entre 1 et 365 jours');
       }
       const dateRange = `${days}d`;
-      const data = await connector.fetchData(dateRange);
+      const data = await connector.fetchData(dateRange, baselineDate);
       this.results.ga4 = data;
     } catch (error) {
       console.error('[API Orchestrator] GA4 error:', error.message);
@@ -75,7 +76,7 @@ class ApiOrchestrator {
     }
   }
 
-  async _fetchGSC() {
+  async _fetchGSC(baselineDate) {
     try {
       const connector = new GSCConnector(
         this.params.serviceAccountData.path,
@@ -88,7 +89,7 @@ class ApiOrchestrator {
         throw new Error('analysisPeriodDays est requis et doit être entre 1 et 365 jours');
       }
       const dateRange = `${days}d`;
-      const data = await connector.fetchData(dateRange);
+      const data = await connector.fetchData(dateRange, baselineDate);
       this.results.gsc = data;
     } catch (error) {
       console.error('[API Orchestrator] GSC error:', error.message);

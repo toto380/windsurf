@@ -140,7 +140,7 @@ class BaselineAutoScan {
     const p = this.params;
     try {
       const connector = new GA4Connector(p.serviceAccountData.path, p.ga4PropertyId);
-      this._ga4 = await connector.fetchData(`${this._days}d`);
+      this._ga4 = await connector.fetchData(`${this._days}d`, this._endDate);
       if (this._ga4.status === 'ok') {
         this.sourcesUsed.push('GA4');
         const m = this._ga4.metrics;
@@ -163,7 +163,7 @@ class BaselineAutoScan {
     const p = this.params;
     try {
       const connector = new GSCConnector(p.serviceAccountData.path, p.gscSiteUrl);
-      this._gsc = await connector.fetchData(`${this._days}d`);
+      this._gsc = await connector.fetchData(`${this._days}d`, this._endDate);
       if (this._gsc.status === 'ok') {
         this.sourcesUsed.push('GSC');
         const m = this._gsc.metrics;
