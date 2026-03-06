@@ -83,11 +83,7 @@ class ReportGenerator {
             </div>
             <div class="metric">
                 <span>HTTPS</span>
-                <strong>${technical.structure.hasHttps ? "✅" : "❌"}</strong>
-            </div>
-            <div class="metric">
-                <span>Mobile</span>
-                <strong>${technical.structure.hasViewport ? "✅" : "❌"}</strong>
+                <strong>${technical.security?.https ? "✅" : "❌"}</strong>
             </div>
         </section>
         
@@ -117,7 +113,7 @@ class ReportGenerator {
             ${recommendations.map(rec => `
                 <div class="rec priority-${rec.priority.toLowerCase()}">
                     <span class="priority priority-${rec.priority.toLowerCase()}">${rec.priority}</span>
-                    <h4>${rec.title}</h4>
+                    <h4>${rec.problem || rec.title || '(Sans titre)'}</h4>
                     <p>Impact: ${rec.impact}</p>
                 </div>
             `).join("")}
@@ -137,6 +133,8 @@ class ReportGenerator {
   generateAnalyticsDashboard() {
     const forecastInputs = this.results.forecastInputsFinal;
     const baseline = forecastInputs?.baseline || {};
+    // conversionRate, aov, roas, cac live in forecastInputsFinal.metrics, NOT in .baseline
+    const metrics  = forecastInputs?.metrics  || {};
     
     // Helper to format metric with source
     const formatMetric = (metric, label, format = 'number') => {
@@ -189,14 +187,14 @@ class ReportGenerator {
     <div style="margin-bottom: 25px;">
       <h4 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1em;">📊 Métriques réelles (Baseline)</h4>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px;">
-        ${formatMetric(baseline.sessions, 'Sessions')}
-        ${formatMetric(baseline.conversions, 'Conversions')}
-        ${formatMetric(baseline.conversionRate, 'Taux conversion', 'percent')}
-        ${formatMetric(baseline.revenue, 'Revenus', 'currency')}
-        ${formatMetric(baseline.spend, 'Dépenses Ads', 'currency')}
-        ${formatMetric(baseline.aov, 'Panier moyen', 'currency')}
-        ${formatMetric(baseline.roas, 'ROAS', 'decimal')}
-        ${formatMetric(baseline.cac, 'CAC', 'currency')}
+        ${formatMetric(baseline.sessions,       'Sessions')}
+        ${formatMetric(baseline.conversions,     'Conversions')}
+        ${formatMetric(metrics.conversionRate,   'Taux conversion', 'percent')}
+        ${formatMetric(baseline.revenue,         'Revenus', 'currency')}
+        ${formatMetric(baseline.spend,           'Dépenses Ads', 'currency')}
+        ${formatMetric(metrics.aov,              'Panier moyen', 'currency')}
+        ${formatMetric(metrics.roas,             'ROAS', 'decimal')}
+        ${formatMetric(metrics.cac,              'CAC', 'currency')}
       </div>
     </div>` : '';
     
@@ -214,7 +212,8 @@ class ReportGenerator {
    * Generate Quick Wins Engine Section
    */
   generateQuickWinsEngineSection() {
-    const quickWins = this.results.quickWins || [];
+    // quickWins is { generated, count, items, timestamp } — NOT a plain array
+    const quickWins = this.results.quickWins?.items || [];
     
     if (quickWins.length === 0) {
       return '';
@@ -226,11 +225,11 @@ class ReportGenerator {
           <h4 style="margin: 0; color: #1e293b;">${qw.title}</h4>
           <span style="font-size: 0.75em; padding: 4px 8px; border-radius: 4px; background: ${qw.source === 'private' ? '#dbeafe' : '#f3f4f6'}; color: ${qw.source === 'private' ? '#1d4ed8' : '#6b7280'};">${qw.source === 'private' ? 'Données privées' : 'Données publiques'}</span>
         </div>
-        <p style="color: #64748b; margin-bottom: 10px;">${qw.problem}</p>
+        <p style="color: #64748b; margin-bottom: 10px;">${qw.observation || qw.problem || ''}</p>
         <div style="display: flex; gap: 15px; font-size: 0.85em;">
-          <span style="color: #10b981;">Impact: ${qw.impactScore}/10</span>
-          <span style="color: #f59e0b;">Effort: ${qw.effortScore}/10</span>
-          ${qw.expectedGain ? `<span style="color: #667eea;">Gain: ${qw.expectedGain}</span>` : ''}
+          <span style="color: #10b981;">Impact: ${qw.impact || 'N/A'}</span>
+          <span style="color: #f59e0b;">Effort: ${qw.effort || 'N/A'}</span>
+          ${qw.expectedGain || qw.potential ? `<span style="color: #667eea;">Gain: ${qw.expectedGain || '+' + qw.potential + '%'}</span>` : ''}
         </div>
       </div>
     `).join('');
@@ -265,7 +264,7 @@ class ReportGenerator {
     return `
     <section class="section page-break">
         <h2>📈 Plan de Scaling</h2>
-        <p style="color: #64748b; margin-bottom: 25px; font-size: 0.95em;">Plan basé sur ${scalingPlan.mode === 'private' ? 'données privées' : 'données publiques'}</p>
+        <p style="color: #64748b; margin-bottom: 25px; font-size: 0.95em;">Plan basé sur ${scalingPlan.baseMode === 'private' ? 'données privées' : 'données publiques'}</p>
         ${phasesHTML}
     </section>`;
   }
@@ -276,7 +275,7 @@ class ReportGenerator {
   generateGrowthForecastSection() {
     const forecast = this.results.forecast;
     
-    if (!forecast || forecast.status === 'disabled') {
+    if (!forecast || forecast.dataStatus === 'disabled') {
       return `
       <section class="section page-break">
           <h2>📈 Prévisions de Croissance</h2>
@@ -297,17 +296,17 @@ class ReportGenerator {
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
             <div style="text-align: center; padding: 15px; background: #f8fafc; border-radius: 8px;">
               <div style="font-size: 1.2em; font-weight: 700; color: #64748b;">Conservateur</div>
-              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.conservative?.traffic?.toLocaleString() || 'N/A'}</div>
+              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.conservative?.sessions?.toLocaleString() || 'N/A'}</div>
               <div style="font-size: 0.8em; color: #64748b;">sessions</div>
             </div>
             <div style="text-align: center; padding: 15px; background: #dbeafe; border-radius: 8px;">
               <div style="font-size: 1.2em; font-weight: 700; color: #1d4ed8;">Réaliste</div>
-              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.realistic?.traffic?.toLocaleString() || 'N/A'}</div>
+              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.realistic?.sessions?.toLocaleString() || 'N/A'}</div>
               <div style="font-size: 0.8em; color: #64748b;">sessions</div>
             </div>
             <div style="text-align: center; padding: 15px; background: #dcfce7; border-radius: 8px;">
               <div style="font-size: 1.2em; font-weight: 700; color: #16a34a;">Ambitieux</div>
-              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.ambitious?.traffic?.toLocaleString() || 'N/A'}</div>
+              <div style="font-size: 1.5em; color: #1e293b; margin-top: 10px;">${projection.scenarios?.ambitious?.sessions?.toLocaleString() || 'N/A'}</div>
               <div style="font-size: 0.8em; color: #64748b;">sessions</div>
             </div>
           </div>

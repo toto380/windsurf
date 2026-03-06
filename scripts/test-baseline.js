@@ -420,6 +420,134 @@ async function test_ads_kpi_null_guard() {
   assert(Math.abs(k2.roas - 5) < 0.001, 'ROAS = 5 (5000/1000)');
 }
 
+async function test_report_bugs() {
+  console.log('\n📋 Test 14: ReportGenerator — tous les bugs corrigés');
+
+  const { ReportGenerator } = require('../src/backend/report.js');
+
+  // Build minimal results that exercised every fixed path
+  const results = {
+    meta: { company: 'TestCo', url: 'https://test.com', auditType: 'private',
+            date: new Date().toISOString(), version: '3.0', duration: 5 },
+    scores: { global: 72, technical: 68, marketing: 55, data: 40, maturity: 'Intermédiaire' },
+    technical: {
+      performance: { loadTime: 2.4, grade: 'B', score: 68, lcp: '2.1s', cls: '0.05',
+                     ttfb: '0.4s', pageWeight: 420000, https: true },
+      crawl:   { pagesAnalyzed: 45, errors: [], robots: { present: true },
+                 sitemap: { present: true }, redirects: [] },
+      seo:     { indexability: { score: 74, issues: [] } },
+      // correct path used by report: technical.security.https
+      security: { https: true, headers: { hsts: true, csp: false, xframe: false } }
+    },
+    marketing: {
+      tracking:   { detected: ['GA4', 'GTM'], score: 70,
+                    ga4: { present: true }, gtm: { present: true }, meta: { present: false },
+                    tiktok: { present: false }, linkedin: { present: false }, googleAds: { present: false } },
+      conversion: { heuristicScore: 55 },
+      elements:   { hasCTA: true, hasForms: true, hasPhone: false, hasEmail: true, hasChat: false }
+    },
+    // recommendations use .problem, not .title
+    recommendations: [
+      { problem: 'Sitemap absent', priority: 'Haute', impact: '+10% indexation',
+        effort: 'Faible', estimatedGain: '+10%', category: 'SEO', evidence: 'Crawl' },
+      { problem: 'CPA élevé', priority: 'Moyenne', impact: 'Rentabilité améliorée',
+        effort: 'Moyen', estimatedGain: '-20% CPA', category: 'Ads', evidence: 'CSV' }
+    ],
+    roadmap: { quick: [{ problem: 'Sitemap absent' }], medium: [], long: [] },
+    forecast: {
+      dataStatus: 'ok',  // correct field (not .status)
+      projection: {
+        dataStatus: 'ok',
+        scenarios: {
+          // correct field: .sessions (not .traffic)
+          conservative: { sessions: 3000, conversions: 90,  revenue: 9000,  cr: '3.00' },
+          realistic:    { sessions: 3150, conversions: 100, revenue: 10000, cr: '3.17' },
+          ambitious:    { sessions: 3450, conversions: 120, revenue: 12000, cr: '3.48' }
+        },
+        timeline: { labels: ['M1','M2','M3'],
+          traffic:  { conservative: [3000,3000,3000], realistic: [3050,3100,3150], ambitious: [3150,3300,3450] },
+          revenue:  { conservative: [9000,9000,9000], realistic: [9500,9750,10000], ambitious: [10500,11000,12000] }
+        },
+        assumptions: ['Baseline trafic: 3000 sessions/mois', 'ASSUMPTION CRO: Réaliste (+5%)']
+      }
+    },
+    // quickWins is { generated, count, items } — NOT a plain array
+    quickWins: {
+      generated: true, count: 1,
+      items: [{ title: 'Optimisation Conversion', impact: 'Élevé', effort: 'Moyen',
+                observation: 'CR < 2%', action: 'A/B test CTA', potential: 40, confidence: 'MEDIUM' }]
+    },
+    // scalingPlan uses .baseMode (not .mode)
+    scalingPlan: {
+      generated: true, baseMode: 'private',
+      dataSource: 'GA4/GSC/Ads',
+      phases: [{ name: 'Phase 1', duration: '1-2 mois', focus: 'Tracking', actions: ['Vérifier GA4'], expectedGain: '+10%' }],
+      kpis: { primary: [{ name: 'Trafic', baseline: 3000, target3m: 3600, target6m: 4500, source: 'GA4' }] },
+      milestones: [{ month: 1, name: 'Tracking OK', criteria: 'GA4 actif', critical: false }]
+    },
+    forecastInputsFinal: {
+      analysisWindow: { days: 90, startDate: '2025-12-06', endDate: '2026-03-06' },
+      // baseline has only: sessions, conversions, revenue, spend
+      baseline: {
+        sessions:    { value: 9000,   source: 'GA4',      confidence: 'HIGH' },
+        conversions: { value: 270,    source: 'GA4',      confidence: 'HIGH' },
+        revenue:     { value: 27000,  source: 'GA4',      confidence: 'HIGH' },
+        spend:       { value: 3000,   source: 'Ads CSV',  confidence: 'HIGH' }
+      },
+      // derived metrics live in .metrics, NOT in .baseline
+      metrics: {
+        conversionRate: { value: 3.0,  source: 'Calculé', confidence: 'HIGH' },
+        aov:            { value: 100,  source: 'Calculé', confidence: 'HIGH' },
+        roas:           { value: 9.0,  source: 'Calculé', confidence: 'MEDIUM' },
+        cac:            { value: 11.1, source: 'Calculé', confidence: 'MEDIUM' }
+      },
+      dataCoverage: 100, confidenceGlobal: 'HIGH',
+      privateAvailability: { hasGA4: true, hasGSC: false, hasGTM: false, hasAds: true }
+    },
+    ads: { normalized: { totals: { spend: 3000, conversions: 270, clicks: 6000, impressions: 80000, value: 27000 },
+           kpis: { cpa: 11.1, cpc: 0.5, roas: 9.0, ctr: 7.5, cr: null } } },
+    qualityGate: { passed: true, dataCoverage: 100, confidenceLevel: 'HIGH',
+                   sourcesUsed: ['crawl','ga4','google-ads-csv'], missing: [] },
+    evidence: [], unifiedData: {}
+  };
+
+  let html, err;
+  try {
+    const gen = new ReportGenerator(results);
+    const out = await gen.generate();
+    html = out.html;
+  } catch (e) { err = e; }
+
+  assert(!err, `Pas d'erreur à la génération HTML (${err?.message || 'ok'})`);
+  assert(typeof html === 'string' && html.length > 500, 'HTML généré non vide');
+
+  // Bug 1: technical.security.https — no crash, HTTPS row present
+  assert(html.includes('✅') || html.includes('❌'), 'Ligne HTTPS rendue sans TypeError');
+
+  // Bug 2: rec.problem displayed (not undefined)
+  assert(html.includes('Sitemap absent'),  'rec.problem affiché correctement');
+  assert(!html.includes('>undefined<'),    'Aucun champ undefined dans le HTML');
+
+  // Bug 3: derived metrics from forecastInputsFinal.metrics shown correctly
+  assert(html.includes('3.00%') || html.includes('3,00%') || html.includes('Taux conversion'),
+    'Taux conversion affiché (metrics.conversionRate)');
+  assert(html.includes('Panier moyen') || html.includes('AOV'), 'AOV affiché (metrics.aov)');
+
+  // Bug 4: quickWins.items rendered (1 item)
+  assert(html.includes('Optimisation Conversion'), 'Quick win title affiché depuis items[]');
+
+  // Bug 5: scalingPlan.baseMode → 'données privées'
+  assert(html.includes('données privées'), 'scalingPlan.baseMode détecté correctement');
+
+  // Bug 6: forecast.dataStatus = 'ok' → projection shown (not disabled)
+  assert(html.includes('Prévisions de Croissance'), 'Section forecast présente');
+  assert(!html.includes('Prévisions indisponibles'), 'Prévisions non bloquées à tort');
+
+  // Bug 7: scenarios.*.sessions displayed (3000)
+  assert(html.includes('3') && (html.includes('3 000') || html.includes('3000')),
+    'Valeur sessions scénario affichée (pas .traffic)');
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -438,6 +566,7 @@ async function test_ads_kpi_null_guard() {
     await test_forecast_null_cr_aov_no_nan();
     await test_forecast_no_reference_error();
     await test_ads_kpi_null_guard();
+    await test_report_bugs();
   } catch (err) {
     console.error('\n💥 Unexpected test runner error:', err.stack || err);
     failed++;

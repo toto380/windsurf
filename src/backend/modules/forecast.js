@@ -38,7 +38,9 @@ class ForecastEngine {
     const daysInPeriod = this.inputs.analysisWindow?.days || 30;
     const monthsInPeriod = daysInPeriod / 30;
     const baselineSessions = Math.round(this.inputs.baseline.sessions.value / monthsInPeriod);
-    // Null-guard: treat missing CR/AOV as 0 (pure traffic forecast)
+    // Null-guard: when CR or AOV is unavailable, default to 0 so revenue projections
+    // are 0 (truthful: no revenue estimate possible without conversion data) rather than NaN.
+    // The QualityGate.canGenerateForecast() will emit a warning when this occurs.
     const currentCR = (this.inputs.metrics.conversionRate?.value ?? 0) / 100;
     const currentAOV = this.inputs.metrics.aov?.value ?? 0;
     const cpc = this.deriveCPC();
