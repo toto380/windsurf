@@ -115,20 +115,23 @@ class GSCConnector {
 
   _getStartDate(range) {
     const now = new Date();
-    if (range === '28d') {
+    // Handle Nd format (e.g. "10d", "28d", "90d", "365d")
+    const daysMatch = String(range || '').match(/^(\d+)d$/);
+    if (daysMatch) {
+      const days = parseInt(daysMatch[1], 10);
       const d = new Date(now);
-      d.setDate(d.getDate() - 28);
+      d.setDate(d.getDate() - days);
       return d.toISOString().split('T')[0];
-    } else if (range === '90d') {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 90);
-      return d.toISOString().split('T')[0];
-    } else if (range === '12m') {
+    }
+    if (range === '12m') {
       const d = new Date(now);
       d.setFullYear(d.getFullYear() - 1);
       return d.toISOString().split('T')[0];
     }
-    return '28daysAgo';
+    // Fallback: 28 days ago
+    const d = new Date(now);
+    d.setDate(d.getDate() - 28);
+    return d.toISOString().split('T')[0];
   }
 
   _parseTopQueries(rows) {

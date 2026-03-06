@@ -9,6 +9,7 @@ const { AuditEngine } = require("./audit.js");
 const { ReportGenerator } = require("./report.js");
 const { PDFExporter } = require("./pdf.js");
 const { ApiOrchestrator } = require("./modules/apiOrchestrator.js");
+const { BaselineAutoScan } = require("./modules/baselineAutoScan.js");
 
 /**
  * Nettoie une chaîne pour l'utiliser comme nom de fichier (Windows/Linux/Mac)
@@ -102,108 +103,21 @@ class Backend {
   }
 
   async fetchBaseline(params, log = console.log) {
-    log('[Backend] 📊 Fetching baseline data...');
-    
+    log('[Backend] 📊 Démarrage du baseline autoscan...');
+
     try {
-      const baselinePeriodDays = params.baselinePeriodDays || 30;
-      const { googleAdsCSV, metaAdsCSV } = params;
-      
-      // Create temporary orchestrator with baseline period
-      const orchestratorOptions = {
-        ...params,
-        analysisPeriodDays: baselinePeriodDays
-      };
-      
-      const orchestrator = new ApiOrchestrator(orchestratorOptions);
-      const apiResults = await orchestrator.fetchAllData();
-      
-      // Import Ads CSV data if provided
-      const adsResults = { csv: {}, api: {} };
-      
-      if (googleAdsCSV) {
-        try {
-          const { GoogleAdsConnector } = require('./connectors/googleAds.js');
-          const csvPath = Array.isArray(googleAdsCSV) ? googleAdsCSV[0] : googleAdsCSV;
-          adsResults.csv.google = await GoogleAdsConnector.importFromCSV(csvPath, baselinePeriodDays);
-          log('[Backend] ✅ Google Ads CSV imported');
-        } catch (e) {
-          log(`[Backend] ⚠️ Google Ads CSV error: ${e.message}`);
-        }
+      // RÈGLE DE PÉRIODE UNIQUE : only analysisPeriodDays is used
+      const analysisPeriodDays = Number(params.analysisPeriodDays);
+      if (!analysisPeriodDays || analysisPeriodDays < 1 || analysisPeriodDays > 365) {
+        throw new Error('analysisPeriodDays requis (1–365 jours)');
       }
-      
-      if (metaAdsCSV) {
-        try {
-          const { MetaAdsConnector } = require('./connectors/metaAds.js');
-          const csvPath = Array.isArray(metaAdsCSV) ? metaAdsCSV[0] : metaAdsCSV;
-          adsResults.csv.meta = await MetaAdsConnector.importFromCSV(csvPath, baselinePeriodDays);
-          log('[Backend] ✅ Meta Ads CSV imported');
-        } catch (e) {
-          log(`[Backend] ⚠️ Meta Ads CSV error: ${e.message}`);
-        }
-      }
-      
-      // Merge API and CSV results
-      adsResults.api = apiResults.adsApi || {};
-      const adsSummary = aggregateAdsData(adsResults);
-      
-      const mergedResults = {
-        ...apiResults,
-        ads: adsResults
-      };
-      
-      // Build baseline from merged results
-      const { BaselineBuilder } = require('./modules/baselineBuilder.js');
-      const builder = new BaselineBuilder(mergedResults, adsSummary);
-      const baseline = builder.build();
-      
-      // Calculer les métriques dérivées correctement
-      const sessions = baseline.sessions?.value || 0;
-      const conversions = baseline.conversions?.value || 0;
-      const revenue = baseline.revenue?.value || 0;
-      const spend = baseline.spend?.value || 0;
-      
-      // Conversion Rate: conversions / sessions (si données disponibles)
-      const calculatedCR = sessions > 0 ? (conversions / sessions) * 100 : null;
-      
-      // AOV: revenue / conversions (si données disponibles)
-      const calculatedAOV = conversions > 0 ? revenue / conversions : null;
-      
-      // ROAS: revenue / spend (si données disponibles)
-      const calculatedROAS = spend > 0 ? revenue / spend : null;
-      
-      log('[Backend] ✅ Baseline data fetched successfully');
-      
-      return { 
-        success: true, 
-        results: {
-          sessions: baseline.sessions,
-          conversions: baseline.conversions,
-          revenue: baseline.revenue,
-          spend: baseline.spend,
-          conversionRate: {
-            value: calculatedCR,
-            source: calculatedCR ? 'calculated' : 'unavailable',
-            confidence: calculatedCR ? 'HIGH' : 'LOW'
-          },
-          aov: {
-            value: calculatedAOV,
-            source: calculatedAOV ? 'calculated' : 'unavailable',
-            confidence: calculatedAOV ? 'HIGH' : 'LOW'
-          },
-          roas: {
-            value: calculatedROAS,
-            source: calculatedROAS ? 'calculated' : 'unavailable',
-            confidence: calculatedROAS ? 'HIGH' : 'LOW'
-          },
-          period: baselinePeriodDays,
-          adsSummary,
-          dataSources: {
-            api: Object.keys(apiResults).filter(k => apiResults[k]?.status === 'ok'),
-            csv: Object.keys(adsResults.csv),
-            ads: adsSummary.sources
-          }
-        }
-      };
+
+      const pipeline = new BaselineAutoScan(params, log);
+      const result = await pipeline.run();
+
+      log('[Backend] ✅ Baseline autoscan terminé');
+      return { success: true, results: result };
+
     } catch (error) {
       log(`[Backend] ❌ Baseline fetch error: ${error.message}`);
       return { success: false, error: error.message };
