@@ -548,6 +548,57 @@ async function test_report_bugs() {
     'Valeur sessions scénario affichée (pas .traffic)');
 }
 
+// ─── New test: end date format validation ──────────────────────────────────
+
+async function test_end_date_format() {
+  console.log('\n📋 Test 15: endDate est au format YYYY-MM-DD (pas "today")');
+
+  const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  // Validate that GSC fetchData uses a YYYY-MM-DD end date
+  let gscEndDate = null;
+  const gscModule = {
+    GSCConnector: class {
+      async fetchData(dateRange, endDate) {
+        gscEndDate = endDate;
+        return { status: 'ok', metrics: { clicks: 100, impressions: 1000 }, confidence: 'MEDIUM' };
+      }
+      static async testConnection() { return { success: true }; }
+    }
+  };
+
+  // Validate that GA4 fetchData uses a YYYY-MM-DD end date
+  let ga4EndDate = null;
+  const ga4Module = {
+    GA4Connector: class {
+      async fetchData(dateRange, endDate) {
+        ga4EndDate = endDate;
+        return { status: 'ok', metrics: { sessions: 500, conversions: 10, totalRevenue: 1000 }, confidence: 'HIGH' };
+      }
+      static async testConnection() { return { success: true }; }
+    }
+  };
+
+  inject(ga4Module, gscModule, makeGoogleAdsStub(false), makeMetaAdsStub(false));
+
+  const { BaselineAutoScan } = loadPipeline();
+  await new BaselineAutoScan(
+    { analysisPeriodDays: 30, serviceAccountData: { path: '/fake/sa.json' }, ga4PropertyId: '123', gscSiteUrl: 'https://example.com' },
+    () => {}
+  ).run();
+
+  assert(ga4EndDate !== null, 'GA4 fetchData appelé avec un endDate');
+  assert(ga4EndDate !== 'today', 'GA4 endDate n\'est pas "today"');
+  assert(ISO_DATE_RE.test(ga4EndDate), `GA4 endDate est au format YYYY-MM-DD (got: ${ga4EndDate})`);
+
+  assert(gscEndDate !== null, 'GSC fetchData appelé avec un endDate');
+  assert(gscEndDate !== 'today', 'GSC endDate n\'est pas "today"');
+  assert(ISO_DATE_RE.test(gscEndDate), `GSC endDate est au format YYYY-MM-DD (got: ${gscEndDate})`);
+
+  // Both dates must match the analysis window endDate
+  assert(ga4EndDate === gscEndDate, `GA4 et GSC utilisent le même endDate (${ga4EndDate})`);
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -567,6 +618,7 @@ async function test_report_bugs() {
     await test_forecast_no_reference_error();
     await test_ads_kpi_null_guard();
     await test_report_bugs();
+    await test_end_date_format();
   } catch (err) {
     console.error('\n💥 Unexpected test runner error:', err.stack || err);
     failed++;

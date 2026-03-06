@@ -22,12 +22,13 @@ class GSCConnector {
     }
   }
 
-  async fetchData(dateRange = '28d') {
+  async fetchData(dateRange = '28d', endDate) {
     if (!this.auth) {
       const ok = await this.authenticate();
       if (!ok) throw new Error('Authentication failed');
     }
 
+    const resolvedEndDate = endDate || new Date().toISOString().split('T')[0];
     const client = google.searchconsole({ version: 'v1', auth: this.auth });
 
     try {
@@ -39,7 +40,7 @@ class GSCConnector {
         siteUrl: this.siteUrl,
         requestBody: {
           startDate: this._getStartDate(dateRange),
-          endDate: 'today',
+          endDate: resolvedEndDate,
           dimensions: ['QUERY', 'PAGE'],
           rowLimit: 1000
         }
@@ -50,7 +51,7 @@ class GSCConnector {
         siteUrl: this.siteUrl,
         requestBody: {
           startDate: this._getStartDate(dateRange),
-          endDate: 'today',
+          endDate: resolvedEndDate,
           dimensions: ['QUERY'],
           rowLimit: 20
         }
@@ -61,7 +62,7 @@ class GSCConnector {
         siteUrl: this.siteUrl,
         requestBody: {
           startDate: this._getStartDate(dateRange),
-          endDate: 'today',
+          endDate: resolvedEndDate,
           dimensions: ['PAGE'],
           rowLimit: 20
         }
