@@ -97,26 +97,28 @@
 
       <!-- BASELINE SECTION (Indépendante) -->
       <div id="baselineSection" class="panel" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, transparent 100%); border: 2px solid var(--success);">
-        <h3 style="margin-top: 0; color: var(--success);">Baseline (Données Historiques)</h3>
-        <p style="margin-bottom: 20px; color: var(--text-secondary);">Récupérez vos métriques historiques depuis les API. Indépendant de la période d'analyse générale.</p>
+        <h3 style="margin-top: 0; color: var(--success);">Baseline AutoScan</h3>
+        <p style="margin-bottom: 20px; color: var(--text-secondary);">Calculez automatiquement vos métriques business sur la <strong>période d'analyse définie ci-dessus</strong> (RÈGLE DE PÉRIODE UNIQUE). Vérifiez les résultats avant de lancer l'audit.</p>
         
         <div class="grid2">
           <div class="field">
-            <label>Période de baseline (jours) *</label>
-            <input type="number" id="baselinePeriodDays" placeholder="ex: 90" min="1" max="365" step="1" style="font-size: 1.1em; font-weight: bold;" />
-            <small style="color: var(--success);">Période pour récupérer les données historiques (1-365 jours)</small>
+            <label style="color: var(--text-secondary);">Période utilisée</label>
+            <div style="padding: 10px; background: var(--bg-secondary); border-radius: 8px; font-size: 0.95em; color: var(--success); font-weight: bold;">
+              <span id="baselinePeriodDisplay">— définie par le sélecteur unique ci-dessus —</span>
+            </div>
+            <small>La même période s'applique à GA4, GSC, Google Ads CSV et Meta Ads CSV</small>
           </div>
           <div class="field">
             <label style="color: var(--success);">Action</label>
-            <button type="button" id="fetchBaselineBtn" class="btnSecondary" style="width: 100%;">Récupérer la Baseline</button>
-            <small>Cliquez pour charger les métriques depuis les API et les fichiers CSV</small>
+            <button type="button" id="fetchBaselineBtn" class="btnSecondary" style="width: 100%;">Calculer la baseline</button>
+            <small>Récupère les données des sources disponibles, calcule les métriques et préremplie la configuration</small>
           </div>
         </div>
         
         <!-- Console de résultats baseline -->
         <div id="baselineConsole" style="margin-top: 20px; display: none;">
           <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px;">
-            <div style="color: var(--success); font-weight: bold; margin-bottom: 8px;">Résultats Baseline :</div>
+            <div style="color: var(--success); font-weight: bold; margin-bottom: 8px;">Résultats Baseline AutoScan :</div>
             <pre id="baselineResults" style="margin: 0; white-space: pre-wrap; color: var(--text);"></pre>
           </div>
         </div>

@@ -47,6 +47,7 @@ const els = {
   outputDirPath: $('outputDirPath'),
   outputDirStatus: $('outputDirStatus'),
   analysisPeriodDays: $('analysisPeriodDays'),
+  fetchBaselineBtn: $('fetchBaselineBtn'),
   enableProjection: $('enableProjection'),
   enableObjective: $('enableObjective'),
   forecastPeriod: $('forecastPeriod'),
@@ -54,10 +55,9 @@ const els = {
   objectiveMetric: $('objectiveMetric'),
   objectiveValue: $('objectiveValue'),
   forecastSector: $('forecastSector'),
-  baselinePeriodDays: $('baselinePeriodDays'),
-  fetchBaselineBtn: $('fetchBaselineBtn'),
   baselineConsole: $('baselineConsole'),
-  baselineResults: $('baselineResults')
+  baselineResults: $('baselineResults'),
+  baselinePeriodDisplay: $('baselinePeriodDisplay')
 };
 
 const fileStatusEls = [
@@ -317,9 +317,7 @@ function buildParams(){
   const profile = (els.auditProfileSelect?.value || 'fast');
   const cfg = profileToConfig(profile);
 
-  const analysisPeriodDays = Number(els.analysisPeriodDays?.value);
-
-  const baselinePeriodDays = Number(els.baselinePeriodDays?.value) || null;
+  const analysisPeriodDays = Number(els.analysisPeriodDays?.value) || null;
 
   const enableProjection = els.enableProjection?.checked ?? true;
   const enableObjective = els.enableObjective?.checked ?? false;
@@ -341,6 +339,7 @@ function buildParams(){
     lang,
     auditType: cfg.auditType,
     pricing: cfg,
+    analysisPeriodDays, // RÈGLE DE PÉRIODE UNIQUE — top-level for baseline and API
     serviceAccountData: selectedServiceAccountJsonPath ? { path: selectedServiceAccountJsonPath } : null,
     googleAdsCSV: selectedAdsExportPaths,
     metaAdsCSV: selectedMetaAdsExportPaths,
@@ -349,14 +348,13 @@ function buildParams(){
     gtmAccountId: els.gtmAccountId?.value || null,
     gtmContainerId: els.gtmContainerId?.value || null,
     metricsConfig,
-    baselinePeriodDays,
     logoPath: selectedLogo !== 'favicon.png' ? selectedLogo : null,
     outputDir: selectedOutputDir,
     forecastSettings: {
       analysisPeriodDays, // SEULE période utilisée - obligatoire
       period: els.forecastPeriod?.value || '3m',
-      enableProjection, // ✅ Toggle simultané
-      enableObjective, // ✅ Toggle simultané
+      enableProjection,
+      enableObjective,
       targetMetric: objectiveMetric,
       targetValue: objectiveValue,
       sector: (els.forecastSector?.value || '').trim()
@@ -367,7 +365,7 @@ function buildParams(){
     googleAdsCSV: params.googleAdsCSV,
     metaAdsCSV: params.metaAdsCSV,
     serviceAccount: params.serviceAccountData?.path,
-    baselinePeriodDays: params.baselinePeriodDays,
+    analysisPeriodDays: params.analysisPeriodDays,
     outputDir: params.outputDir
   });
 
@@ -395,6 +393,20 @@ if (els.auditProfileSelect){
   });
   // initial
   togglePrivateAccessUI();
+}
+
+// Update baselinePeriodDisplay whenever analysisPeriodDays changes
+if (els.analysisPeriodDays && els.baselinePeriodDisplay) {
+  const updatePeriodDisplay = () => {
+    const v = Number(els.analysisPeriodDays.value);
+    if (v >= 1 && v <= 365) {
+      els.baselinePeriodDisplay.textContent = `${v} jours`;
+    } else {
+      els.baselinePeriodDisplay.textContent = '— définir la période d\'analyse ci-dessus —';
+    }
+  };
+  els.analysisPeriodDays.addEventListener('input', updatePeriodDisplay);
+  updatePeriodDisplay();
 }
 
 function setupBudgetCalculator() {
@@ -569,43 +581,105 @@ if (els.logoBtn){
 
   if (els.fetchBaselineBtn){
     els.fetchBaselineBtn.addEventListener('click', async () => {
-      const baselinePeriod = els.baselinePeriodDays?.value?.trim();
-      if (!baselinePeriod || isNaN(baselinePeriod) || Number(baselinePeriod) < 1 || Number(baselinePeriod) > 365) {
-        logLine("❌ Période de baseline requise : entrez un nombre de jours entre 1 et 365");
-        els.baselinePeriodDays?.focus();
+      // RÈGLE DE PÉRIODE UNIQUE: use analysisPeriodDays (not a separate baseline period)
+      const analysisPeriodValue = els.analysisPeriodDays?.value?.trim();
+      if (!analysisPeriodValue || isNaN(analysisPeriodValue) || Number(analysisPeriodValue) < 1 || Number(analysisPeriodValue) > 365) {
+        logLine("❌ Période d'analyse requise avant de calculer la baseline (entrez un nombre de jours entre 1 et 365)");
+        els.analysisPeriodDays?.focus();
         return;
       }
 
       if (!window.api || !window.api.fetchBaseline) {
-        logLine("❌ API Electron non connectée pour récupérer la baseline.");
+        logLine("❌ API Electron non connectée pour calculer la baseline.");
         return;
       }
 
       setBusy(true);
-      logLine(`📊 Récupération de la baseline sur ${baselinePeriod} jours...`);
+      logLine(`📊 Calcul de la baseline sur ${analysisPeriodValue} jours...`);
 
       try {
         const params = buildParams();
-        params.baselinePeriodDays = Number(baselinePeriod);
 
-        const results = await window.api.fetchBaseline(params);
+        const result = await window.api.fetchBaseline(params);
 
-        // Afficher dans la console dédiée
+        // Show dedicated baseline console
         if (els.baselineConsole) els.baselineConsole.style.display = 'block';
-        if (els.baselineResults) {
-          els.baselineResults.textContent = JSON.stringify(results, null, 2);
+
+        if (result.status === 'failed' || result.errors?.length) {
+          logLine(`❌ Baseline échouée : ${result.reason || (result.errors && result.errors[0]) || 'Erreur inconnue'}`);
+          if (els.baselineResults) {
+            els.baselineResults.textContent = JSON.stringify(result, null, 2);
+          }
+          return;
         }
 
-        // Log dans la console principale
-        logLine("✅ Baseline récupérée avec succès !");
-        if (results.sessions) logLine(`👥 Sessions: ${results.sessions.value || 'N/A'} (source: ${results.sessions.source || 'N/A'})`);
-        if (results.conversions) logLine(`🛒 Conversions: ${results.conversions.value || 'N/A'} (source: ${results.conversions.source || 'N/A'})`);
-        if (results.revenue) logLine(`💰 Revenus: ${results.revenue.value || 'N/A'} (source: ${results.revenue.source || 'N/A'})`);
-        if (results.conversionRate) logLine(`📈 Taux conversion: ${results.conversionRate.value ? results.conversionRate.value.toFixed(2) + '%' : 'N/A'}`);
-        if (results.aov) logLine(`🛍️ Panier moyen: ${results.aov.value ? results.aov.value.toFixed(2) + '€' : 'N/A'}`);
+        // Display structured log in dedicated console
+        if (els.baselineResults) {
+          const lines = [];
+          const aw = result.analysisWindow;
+          if (aw) lines.push(`📅 Période : ${aw.days} jours (${aw.startDate} → ${aw.endDate})`);
+
+          const srcs = result.sourcesUsed || [];
+          lines.push(`🔌 Sources utilisées : ${srcs.length ? srcs.join(', ') : 'aucune'}`);
+
+          const m = result.metrics || {};
+          const fmtMetric = (label, metric, unit = '') => {
+            if (!metric) return `⚠️ ${label} : indisponible`;
+            if (metric.status === 'unavailable' || metric.value === null) {
+              return `⚠️ ${label} unavailable : ${metric.reason || 'données manquantes'}`;
+            }
+            const v = typeof metric.value === 'number' ? metric.value.toFixed(2) : metric.value;
+            return `✅ ${label} : ${v}${unit} (source: ${metric.source}, confiance: ${metric.confidence})`;
+          };
+
+          lines.push(fmtMetric('Sessions',             m.sessions));
+          lines.push(fmtMetric('Conversions',          m.conversions));
+          lines.push(fmtMetric('Revenue',              m.revenue,              '€'));
+          lines.push(fmtMetric('Taux de conversion',   m.conversionRate,       '%'));
+          lines.push(fmtMetric('Valeur moy. conv.',    m.averageConversionValue,'€'));
+          lines.push(fmtMetric('Panier moyen (AOV)',   m.averageOrderValue,    '€'));
+          lines.push(fmtMetric('Spend Ads',            m.spend,                '€'));
+          lines.push(fmtMetric('CPA',                  m.cpa,                  '€'));
+          lines.push(fmtMetric('ROAS',                 m.roas));
+
+          if (result.warnings && result.warnings.length) {
+            lines.push('');
+            lines.push(`⚠️ Avertissements :`);
+            result.warnings.forEach(w => lines.push(`   ⚠️ ${w}`));
+          }
+
+          els.baselineResults.textContent = lines.join('\n');
+        }
+
+        logLine("✅ Baseline calculée avec succès !");
+
+        // Prefill metrics config fields from pipeline result
+        const prefill = result.prefill || {};
+
+        if (prefill.currentConversionRate !== null && prefill.currentConversionRate !== undefined) {
+          const el = document.getElementById('currentConversionRate');
+          if (el && !el.value) {
+            el.value = prefill.currentConversionRate.toFixed(4);
+            logLine(`🔢 Taux de conversion prérempli : ${el.value}%`);
+          }
+        }
+        if (prefill.avgConversionValue !== null && prefill.avgConversionValue !== undefined) {
+          const el = document.getElementById('avgConversionValue');
+          if (el && !el.value) {
+            el.value = prefill.avgConversionValue.toFixed(2);
+            logLine(`🔢 Valeur moy. conversion préremplie : ${el.value}€`);
+          }
+        }
+        if (prefill.avgOrderValue !== null && prefill.avgOrderValue !== undefined) {
+          const el = document.getElementById('avgOrderValue');
+          if (el && !el.value) {
+            el.value = prefill.avgOrderValue.toFixed(2);
+            logLine(`🔢 Panier moyen prérempli : ${el.value}€`);
+          }
+        }
 
       } catch (e) {
-        logLine(`❌ Erreur lors de la récupération baseline: ${e?.message || e}`);
+        logLine(`❌ Erreur lors du calcul baseline: ${e?.message || e}`);
         if (els.baselineResults) {
           els.baselineResults.textContent = `Erreur: ${e?.message || e}`;
         }
