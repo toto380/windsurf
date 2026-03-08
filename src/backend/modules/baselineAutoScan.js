@@ -167,7 +167,12 @@ class BaselineAutoScan {
       if (this._gsc.status === 'ok') {
         this.sourcesUsed.push('GSC');
         const m = this._gsc.metrics;
-        this.log(`✅ GSC données récupérées — clicks: ${m.clicks}, impressions: ${m.impressions}`);
+        if (this._gsc.dataAvailable) {
+          this.log(`✅ GSC données récupérées — clicks: ${m.clicks}, impressions: ${m.impressions}`);
+        } else {
+          this.log(`✅ GSC connexion OK — mais aucune donnée sur la période (clicks: 0, impressions: 0)`);
+          this.warnings.push(`GSC : connexion réussie mais aucune donnée exploitable sur la période de ${this._days} jours`);
+        }
       } else {
         this.log(`⚠️ GSC erreur données : ${this._gsc.error}`);
         this.warnings.push(`GSC données : ${this._gsc.error}`);
@@ -219,6 +224,9 @@ class BaselineAutoScan {
       if (this._metaAds.status === 'ok') {
         this.sourcesUsed.push('Meta Ads CSV');
         const m = this._metaAds.metrics;
+        if (this._metaAds.detectedColumns) {
+          this.log(`📋 Meta Ads CSV colonnes détectées : ${this._metaAds.detectedColumns.join(' | ')}`);
+        }
         this.log(`✅ Meta Ads CSV chargé — spend: ${m.spend}€, conversions: ${m.conversions}, clicks: ${m.clicks}`);
         if (connector._excludedRows > 0) {
           this.log(`⚠️ Meta Ads CSV : ${connector._excludedRows} ligne(s) hors période ignorée(s)`);
@@ -453,30 +461,51 @@ class BaselineAutoScan {
   // ── Step 12: updateUiLog ────────────────────────────────────────────────
   _updateUiLog() {
     const m = this._result.metrics;
-    const fmt = (metric, unit = '') => {
-      if (metric.status === 'unavailable' || metric.value === null) {
-        return `⚠️ unavailable — ${metric.reason || 'données manquantes'}`;
-      }
+
+    const fmtOk = (metric, unit = '') => {
       const v = typeof metric.value === 'number' ? metric.value.toFixed(2) : metric.value;
       return `✅ ${v}${unit} (source: ${metric.source}, confiance: ${metric.confidence})`;
     };
 
-    this.log('─────────────────────────────');
-    this.log(`📊 Sessions              : ${fmt(m.sessions)}`);
-    this.log(`🛒 Conversions           : ${fmt(m.conversions)}`);
-    this.log(`💰 Revenue               : ${fmt(m.revenue, '€')}`);
+    const fmtUnavailable = (metric, context = '') => {
+      const reason = metric.reason || 'données manquantes';
+      return `⚠️ non disponible — ${reason}${context ? ' | ' + context : ''}`;
+    };
+
+    const fmt = (metric, unit = '', context = '') => {
+      if (!metric || metric.status === 'unavailable' || metric.value === null) {
+        return fmtUnavailable(metric || { reason: 'données manquantes' }, context);
+      }
+      return fmtOk(metric, unit);
+    };
+
+    this.log('═══════════════════════════════════════');
+    this.log('📊 BASELINE — RÉSUMÉ DES MÉTRIQUES');
+    this.log('═══════════════════════════════════════');
+    this.log(`📊 Sessions              : ${fmt(m.sessions, '', 'vérifiez GA4 si absent')}`);
+    this.log(`🛒 Conversions           : ${fmt(m.conversions, '', 'vérifiez le tracking des objectifs')}`);
+    this.log(`💰 Revenue               : ${fmt(m.revenue, '€', 'e-commerce non configuré si absent')}`);
     this.log(`📈 Taux de conversion    : ${fmt(m.conversionRate, '%')}`);
     this.log(`🛍️  Valeur moy. conv.    : ${fmt(m.averageConversionValue, '€')}`);
-    this.log(`🛒 Panier moyen (AOV)    : ${fmt(m.averageOrderValue, '€')}`);
-    this.log(`💸 Spend Ads             : ${fmt(m.spend, '€')}`);
+    this.log(`🛒 Panier moyen (AOV)    : ${fmt(m.averageOrderValue, '€', 'e-commerce requis')}`);
+    this.log(`💸 Spend Ads             : ${fmt(m.spend, '€', 'importez un CSV Ads pour renseigner')}`);
     this.log(`🎯 CPA                   : ${fmt(m.cpa, '€')}`);
     this.log(`📣 ROAS                  : ${fmt(m.roas)}`);
-    this.log('─────────────────────────────');
+    this.log('───────────────────────────────────────');
+
+    if (this.sourcesUsed.length) {
+      this.log(`🔌 Sources utilisées     : ${this.sourcesUsed.join(', ')}`);
+    } else {
+      this.log('🔌 Sources utilisées     : aucune');
+    }
 
     if (this.warnings.length) {
-      this.log(`⚠️ ${this.warnings.length} avertissement(s) :`);
-      this.warnings.forEach(w => this.log(`   ⚠️ ${w}`));
+      this.log('───────────────────────────────────────');
+      this.log(`⚠️  Avertissements (${this.warnings.length}) :`);
+      this.warnings.forEach(w => this.log(`   ⚠️  ${w}`));
     }
+
+    this.log('═══════════════════════════════════════');
   }
 
   // ── Step 13: prefillMetricsConfig ───────────────────────────────────────

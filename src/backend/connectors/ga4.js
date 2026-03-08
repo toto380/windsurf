@@ -46,46 +46,52 @@ class GA4Connector {
       // 2. Run a report for sessions and conversions
       const report = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
-        metrics: [
-          { name: 'sessions' },
-          { name: 'conversions' },
-          { name: 'totalRevenue' }
-        ],
-        dimensions: [
-          { name: 'date' }
-        ]
+        requestBody: {
+          dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'conversions' },
+            { name: 'totalRevenue' }
+          ],
+          dimensions: [
+            { name: 'date' }
+          ]
+        }
       });
 
       // 3. Run a report for top pages
       const pagesReport = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
-        metrics: [
-          { name: 'sessions' },
-          { name: 'conversions' }
-        ],
-        dimensions: [
-          { name: 'pagePath' },
-          { name: 'pageTitle' }
-        ],
-        orderBys: [
-          { metric: { metricName: 'sessions' }, desc: true }
-        ],
-        limit: 10
+        requestBody: {
+          dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'conversions' }
+          ],
+          dimensions: [
+            { name: 'pagePath' },
+            { name: 'pageTitle' }
+          ],
+          orderBys: [
+            { metric: { metricName: 'sessions' }, desc: true }
+          ],
+          limit: 10
+        }
       });
 
       // 4. Run a report for channels
       const channelsReport = await dataClient.properties.runReport({
         property: `properties/${this.propertyId}`,
-        dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
-        metrics: [
-          { name: 'sessions' },
-          { name: 'conversions' }
-        ],
-        dimensions: [
-          { name: 'sessionDefaultChannelGroup' }
-        ]
+        requestBody: {
+          dateRanges: [{ startDate: this._getStartDate(dateRange), endDate: resolvedEndDate }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'conversions' }
+          ],
+          dimensions: [
+            { name: 'sessionDefaultChannelGroup' }
+          ]
+        }
       });
 
       return {

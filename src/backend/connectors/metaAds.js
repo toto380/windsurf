@@ -43,16 +43,26 @@ class MetaAdsConnector {
       }
 
       // Parse CSV data (simplified implementation)
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const separator = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(separator).map(h => h.trim().replace(/"/g, ''));
       const dataRows = lines.slice(1).map(line => 
-        line.split(',').map(cell => cell.trim().replace(/"/g, ''))
+        line.split(separator).map(cell => cell.trim().replace(/"/g, ''))
       );
+
+      console.log(`[MetaAds] Colonnes détectées (${headers.length}) : ${headers.join(' | ')}`);
 
       // Filter by period if specified
       let filteredRows = dataRows;
+      let excludedRows = 0;
       if (this.periodDays) {
+        const before = dataRows.length;
         filteredRows = this._filterByPeriod(headers, dataRows);
+        excludedRows = before - filteredRows.length;
+        if (excludedRows > 0) {
+          console.log(`[MetaAds] ${excludedRows} ligne(s) hors période exclue(s)`);
+        }
       }
+      this._excludedRows = excludedRows;
 
       // Extract metrics from CSV
       const metrics = this._extractMetrics(headers, filteredRows);
@@ -70,6 +80,7 @@ class MetaAdsConnector {
         topCampaigns,
         topAdSets: [], // Can be extracted if needed
         topAds: [], // Can be extracted if needed
+        detectedColumns: headers,
         evidence: `Data imported from Meta Ads CSV file: ${path.basename(this.csvFilePath)}`,
         confidence: 'HIGH'
       };
@@ -130,6 +141,12 @@ class MetaAdsConnector {
     const valueIndex = headers.findIndex(h => 
       h.toLowerCase().includes('purchase') || h.toLowerCase().includes('revenue')
     );
+
+    if (spendIndex >= 0) {
+      console.log(`[MetaAds] Colonne Spend utilisée : Index [${spendIndex}] = '${headers[spendIndex]}'`);
+    } else {
+      console.warn(`[MetaAds] ⚠️ Aucune colonne 'Spend' trouvée — spend sera à 0€`);
+    }
 
     // Sum up values from all rows
     dataRows.forEach(row => {
